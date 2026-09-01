@@ -6,7 +6,7 @@
  * Python reference so the deployed features match training features.
  *
  * Pipeline: detrend -> zero-phase bandpass (FFT) -> systolic peak pick
- * -> RR intervals -> 13 HRV / irregularity features.
+ * -> RR intervals -> 12 HRV / irregularity features.
  *
  * (Features used: HR, SDNN, RMSSD, pNN50, SD1, SD2, SD1/SD2, LF/HF,
  *  spectral entropy, turning-point ratio, irregularity %, PVC-like

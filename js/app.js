@@ -610,7 +610,7 @@
     if (typeof NADI_MODEL !== 'undefined') {
       const meta = NADI_MODEL.meta || {};
       $('#model-facts').textContent =
-        `${meta.architecture || 'MLP 13-20-10-1'} · val acc ${(meta.val_accuracy * 100).toFixed(1)}% · sens ${(meta.val_sensitivity * 100).toFixed(1)}% · spec ${(meta.val_specificity * 100).toFixed(1)}%`;
+        `${meta.architecture || 'MLP 12-20-10-1'} · val acc ${(meta.val_accuracy * 100).toFixed(1)}% · sens ${(meta.val_sensitivity * 100).toFixed(1)}% · spec ${(meta.val_specificity * 100).toFixed(1)}%`;
     }
   });
 })();

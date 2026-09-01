@@ -26,7 +26,7 @@ const NADI_MODEL = {
 "irr",
 "pvc"
 ],
-"architecture": "MLP 13-20-10-1 (tanh/tanh/sigmoid)",
+"architecture": "MLP 12-20-10-1 (tanh/tanh/sigmoid)",
 "val_accuracy": 0.995,
 "val_sensitivity": 0.9956958393113343,
 "val_specificity": 0.9940357852882704,
