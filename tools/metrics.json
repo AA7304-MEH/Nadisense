@@ -1,0 +1,28 @@
+{
+  "dataset": "PhysioNet-style synthetic + perturbation augmentation (preview model; external validation on real AF data pending)",
+  "n_windows": 12000,
+  "n_train": 9600,
+  "n_val": 2400,
+  "features": [
+    "hrMean",
+    "sdnn",
+    "rmssd",
+    "pnn50",
+    "sd1",
+    "sd2",
+    "sd1sd2",
+    "lf_hf",
+    "s_ent",
+    "turning",
+    "irr",
+    "pvc"
+  ],
+  "architecture": "MLP 13-20-10-1 (tanh/tanh/sigmoid)",
+  "val_accuracy": 0.995,
+  "val_sensitivity": 0.9956958393113343,
+  "val_specificity": 0.9940357852882704,
+  "val_precision": 0.9956958393113343,
+  "val_f1": 0.9956958393113343,
+  "val_auc_approx": 0.995,
+  "threshold": 0.5
+}

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NadiSense — 60-second AI heart screening</title>
+<meta name="description" content="On-device AI cardiac rhythm screening for rural India. Camera-only PPG, offline, vernacular.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230f766e'/%3E%3Cpath d='M10 34h10l4-9 6 16 6-24 6 30 5-13h7' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#0f766e"/>
+      <path d="M10 34h10l4-9 6 16 6-24 6 30 5-13h7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="brand-name" data-i18n="appName">NadiSense</div>
+      <div class="brand-sub" data-i18n="tagline">On-device AI cardiac rhythm screening</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <div class="offline-badge"><span data-i18n="offline">offline-first · no data leaves the phone</span></div>
+    <div class="langs">
+      <button class="lang-pill active" data-lang="en">EN</button>
+      <button class="lang-pill" data-lang="hi">हिं</button>
+      <button class="lang-pill" data-lang="ta">த</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ======================= ONBOARD ======================= -->
+  <section id="view-onboard" class="view active">
+    <div class="hero">
+      <div class="hero-badge">TECHNOVA 2026 · MatricPhase</div>
+      <h1 data-i18n="heroTitle">A 60-second heart check, no hardware, no internet.</h1>
+      <p class="hero-sub" data-i18n="heroSub">NadiSense turns any smartphone camera into a pulse monitor. Built for ASHA workers and PHCs in rural India — screen for irregular rhythm (AFib-like patterns) at the doorstep.</p>
+      <div class="cta-row">
+        <button id="btn-start" class="btn primary big" data-i18n="start">Start Screening</button>
+        <button id="btn-demo" class="btn ghost big" data-i18n="demo">Demo Mode (synthetic signal)</button>
+      </div>
+      <div class="cta-row">
+        <div class="model-chip" id="model-facts">MLP 13-20-10-1 · trained on HRV features</div>
+      </div>
+    </div>
+
+    <div class="grid-4">
+      <div class="card step"><div class="step-n">1</div><h3 data-i18n="how1t">1 · Place fingertip on camera</h3><p data-i18n="how1d">Front or rear camera, covered by the fingertip. Green channel = blood volume.</p></div>
+      <div class="card step"><div class="step-n">2</div><h3 data-i18n="how2t">2 · Wait 60 seconds</h3><p data-i18n="how2d">We capture the pulse waveform, clean motion artifacts, find every beat.</p></div>
+      <div class="card step"><div class="step-n">3</div><h3 data-i18n="how3t">3 · On-device AI screens</h3><p data-i18n="how3d">12 HRV features → tiny neural net (12→20→10→1). Runs offline in under a second.</p></div>
+      <div class="card step"><div class="step-n">4</div><h3 data-i18n="how4t">4 · Get a care level</h3><p data-i18n="how4d">Green — routine. Amber — repeat in 2 weeks. Red — refer for an ECG.</p></div>
+    </div>
+
+    <div class="card privacy">
+      <strong>PRIVACY</strong> <span data-i18n="privacy">Privacy: no image, video or signal is stored or uploaded. Processing happens on this phone.</span>
+    </div>
+
+    <details id="method-details" class="card">
+      <summary>Method &amp; limits</summary>
+      <p data-i18n="methodBody">NadiSense computes pulse-transit dynamics from fingertip video (reflectance PPG) and derives 13 heart-rate-variability features (SDNN, RMSSD, pNN50, SD1/SD2, LF/HF, sample entropy, turning-point ratio, ectopy-like beat fraction, spectral entropy, irregularity %). A 3-layer network trained on HRV patterns returns P(irregular rhythm). This is a SCREENING aid, not a diagnosis — irregularity has many causes (stress, caffeine, ectopic beats), and a negative result does not rule out heart disease.</p>
+    </details>
+  </section>
+
+  <!-- ======================= CAPTURE ======================= -->
+  <section id="view-capture" class="view">
+    <div class="card capture-card">
+      <h2 data-i18n="captureTitle">Cover the camera with your fingertip</h2>
+      <p class="muted" data-i18n="captureSub">Press gently (not hard), sit still, breathe normally.</p>
+
+      <div id="cam-feed" class="cam-wrap hidden">
+        <video id="cam-video" playsinline muted autoplay></video>
+        <div class="roi"></div>
+      </div>
+
+      <div id="sim-panel" class="sim-panel hidden">
+        <div class="sim-kind">
+          <label data-i18n="usingSim" for="sim-kind">Synthetic demo signal (test fixture)</label>
+          <select id="sim-kind">
+            <option value="normal">Normal sinus rhythm</option>
+            <option value="lowhrv">Low HRV (stressed / risk)</option>
+            <option value="afib" selected>Atrial fibrillation-like</option>
+            <option value="noisy">With motion artifact</option>
+            <option value="weak">Weak / flat signal</option>
+          </select>
+          <label class="seed" data-i18n="seedLabel" for="sim-seed">simulation seed</label>
+          <input id="sim-seed" type="number" value="7" min="1" max="999">
+        </div>
+        <p class="muted" data-i18n="simNote">Demo mode feeds a simulated pulse waveform through the same DSP + classifier used for camera capture.</p>
+      </div>
+
+      <div class="state-line"><span id="capture-state" data-i18n="usingCam">Live camera feed</span>
+        <span class="live-hr"><b id="live-hr">—</b> <span data-i18n="liveHr">live HR</span></span>
+      </div>
+
+      <canvas id="wave" class="hidden"></canvas>
+
+      <div id="quality-box" class="quality hidden">
+        <div class="q-top"><span data-i18n="quality">signal quality</span><span id="quality-txt">0%</span></div>
+        <div class="q-track"><div id="quality-bar" class="q-fill" style="width:0%"></div></div>
+        <div class="q-hint" data-i18n="hold">Hold still…</div>
+      </div>
+
+      <div class="time-row">
+        <div class="time-track"><div id="time-bar" class="time-fill" style="width:0%"></div></div>
+        <span id="time-txt" class="time-txt">30s</span>
+      </div>
+
+      <div id="capture-actions" class="hidden">
+        <button id="btn-stop" class="btn danger" data-i18n="stop">Finish early</button>
+      </div>
+      <div id="cam-btn-row"></div>
+    </div>
+  </section>
+
+  <!-- ======================= ANALYZING ======================= -->
+  <section id="view-analyzing" class="view">
+    <div class="card analyze-card">
+      <div class="spinner"></div>
+      <h2 id="analyzing" data-i18n="analyzing">Analyzing on-device…</h2>
+      <ol class="steps">
+        <li id="step-0"><span data-i18n="stQuality">Signal quality check</span><span class="chk">…</span></li>
+        <li id="step-1"><span data-i18n="stBeats">Peak detection (beat finding)</span><span class="chk">…</span></li>
+        <li id="step-2"><span data-i18n="stFeatures">12 HRV features</span><span class="chk">…</span></li>
+        <li id="step-3"><span data-i18n="stClassify">Neural net inference</span><span class="chk">…</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ======================= RESULT ======================= -->
+  <section id="view-result" class="view">
+    <div id="result-error" class="card hidden">
+      <h2 data-i18n="errTitle">Could not read the pulse</h2>
+      <p class="muted" data-i18n="errD">Not enough clean beats in the window. </p>
+      <button id="btn-retake" class="btn primary" data-i18n="retake">Retake test</button>
+    </div>
+
+    <div id="result-dash" class="hidden">
+      <div class="result-head">
+        <div>
+          <h2 data-i18n="resultTitle">Screening result</h2>
+          <div class="muted" data-i18n="duration">30 s window</div>
+        </div>
+        <div id="level-chip" class="chip">—</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card gauge-card">
+          <div id="p-label" class="muted" data-i18n="pLabel">P(irregular rhythm)</div>
+          <div id="p-value" class="p-value">0%</div>
+          <svg id="gauge" viewBox="0 0 200 122" width="100%" aria-hidden="true">
+            <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="#134e4a" stroke-width="15" stroke-linecap="round"/>
+            <path d="M 24.5 108.7 A 76 76 0 0 1 60.5 48.9" fill="none" stroke="#22c55e" stroke-width="9" stroke-linecap="round"/>
+            <path d="M 60.5 48.9 A 76 76 0 0 1 139.5 48.9" fill="none" stroke="#f59e0b" stroke-width="9" stroke-linecap="round"/>
+            <path d="M 139.5 48.9 A 76 76 0 0 1 175.5 108.7" fill="none" stroke="#ef4444" stroke-width="9" stroke-linecap="round"/>
+            <g id="gauge-needle" transform="rotate(-90 100 100)">
+              <line x1="100" y1="100" x2="100" y2="26" stroke="#f8fafc" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="100" cy="100" r="7" fill="#f8fafc"/>
+            </g>
+            <text x="20" y="121" font-size="10" fill="#94a3b8">0</text>
+            <text x="176" y="121" font-size="10" fill="#94a3b8">1</text>
+          </svg>
+          <div class="gauge-scale">
+            <span style="color:#22c55e" data-i18n="levelLow">regular</span>
+            <span style="color:#f59e0b" data-i18n="levelMid">repeat</span>
+            <span style="color:#ef4444" data-i18n="levelHigh">refer</span>
+          </div>
+          <p id="level-body" class="level-body">—</p>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="metrics">HRV metrics</h3>
+          <div id="metric-grid" class="metric-grid"></div>
+          <div id="notes" class="notes"></div>
+        </div>
+      </div>
+
+      <div class="grid-2 plots">
+        <div class="card">
+          <h3 class="muted">Tachogram (RR intervals)</h3>
+          <canvas id="tachogram"></canvas>
+        </div>
+        <div class="card">
+          <h3 class="muted">Poincaré plot</h3>
+          <canvas id="poincare"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="muted">30 s pulse waveform · ● detected beats</h3>
+        <canvas id="review-wave"></canvas>
+      </div>
+
+      <div class="card q-card">
+        <h3 data-i18n="qTitle">2 quick questions (voice or type)</h3>
+        <div class="q-row">
+          <span id="q-text" class="q-text">—</span>
+          <button id="btn-ask-voice" class="btn ghost" data-i18n="askLater">Ask via voice</button>
+        </div>
+        <button id="btn-q-skip" class="btn ghost sm" data-i18n="qSkip">Skip (recommended if filling solo)</button>
+        <div id="q-status" class="muted"></div>
+        <div id="q-answers" class="muted"></div>
+      </div>
+
+      <div class="card">
+        <label for="patient-name" data-i18n="reportAsk">Patient / person name (optional)</label>
+        <input id="patient-name" type="text" maxlength="60">
+        <div class="btn-row">
+          <button id="btn-report" class="btn primary" data-i18n="saveReport">Print / download report</button>
+          <button id="btn-copy" class="btn ghost" data-i18n="copySummary">Copy summary</button>
+          <button id="btn-new" class="btn ghost" data-i18n="newTest">New test</button>
+        </div>
+      </div>
+
+      <div id="logbook" class="card hidden">
+        <div class="log-head"><h3 data-i18n="logbook">Recent tests (this phone only)</h3>
+          <button id="btn-clear-log" class="link-btn" data-i18n="clearLog">clear</button></div>
+        <div id="logbook-list"></div>
+      </div>
+
+      <p class="disclaimer" data-i18n="disclaimer">NadiSense is a screening aid, not a medical device. It does not diagnose any condition. Always confirm with a qualified clinician and a standard ECG.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div data-i18n="footNote">MatricPhase · TECHNOVA 2026 · TSM, Madurai</div>
+</footer>
+
+<script src="js/model_weights.js"></script>
+<script src="js/dsp.js"></script>
+<script src="js/classifier.js"></script>
+<script src="js/simulator.js"></script>
+<script src="js/ppgcamera.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/asr.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
