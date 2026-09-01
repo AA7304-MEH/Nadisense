@@ -7,6 +7,12 @@ Team **Matric Phase** — Aditya Mehra (E&TC) · Abhishek Singh (E&TC) · Siddes
 
 ![NadiSense result screen](assets/ui_mock.png)
 
+## 🎬 Demo (89 s — everything below is the real app)
+
+<video src="demo.mp4" controls width="100%"></video>
+
+*Full walkthrough: onboarding → AFib-style capture (live HR 95) → red-flag result (P(irr) 100%) → normal sinus capture (HR 72) → green result (P(irr) 0%) → motion guardrail → Hindi UI → on-device report.*
+
 ## ▶ Try it live (no install — GitHub Pages)
 
 **https://aa7304-meh.github.io/Nadisense/** — open on a phone or laptop, tap **Demo Mode**, pick *Atrial fibrillation-like* or *Normal sinus rhythm*, and watch the full 60-second screening → HRV analysis → risk flag → report run in your browser. Camera capture also works on any phone with HTTPS.
