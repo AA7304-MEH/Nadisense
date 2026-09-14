@@ -246,8 +246,29 @@
       $('#capture-actions').classList.remove('hidden');
       $('#cam-btn-row').classList.add('hidden');
     } catch (e) {
-      alert(I18N.t('camDenied'));
-      show('onboard');
+      // Camera blocked or unavailable (privacy mode, sandboxed iframe,
+      // desktop without webcam). Don't dead-end the user — fall back to
+      // the synthetic demo source, which exercises the identical pipeline.
+      console.warn('camera unavailable, falling back to demo source:', e);
+      app.mode = 'sim';
+      $('#cam-feed').classList.add('hidden');
+      $('#sim-panel').classList.remove('hidden');
+      $('#capture-state').textContent = I18N.t('camFallback');
+      try {
+        sources.startSim();
+        $('#wave').classList.remove('hidden');
+        $('#quality-box').classList.remove('hidden');
+        app.running = true;
+        app.t0 = performance.now();
+        app.lastHrTick = 0;
+        $('#live-hr').textContent = '\u2014';
+        requestAnimationFrame(captureLoop);
+        $('#capture-actions').classList.remove('hidden');
+        $('#cam-btn-row').classList.add('hidden');
+      } catch (e2) {
+        console.error('demo source failed:', e2);
+        show('onboard');
+      }
     }
   }
 

@@ -43,6 +43,7 @@ const I18N = (() => {
       captureAgain: 'Recapture',
       simNote: 'Demo mode feeds a simulated pulse waveform through the same DSP + classifier used for camera capture.',
       camDenied: 'Camera unavailable (denied or not permitted in this browser). Try Demo Mode — it exercises the identical pipeline.',
+      camFallback: 'Camera not available here — continuing with the synthetic Demo signal (identical pipeline)',
       // analyzing
       analyzing: 'Analyzing on-device…',
       stQuality: 'Signal quality check',
@@ -121,6 +122,7 @@ const I18N = (() => {
       captureAgain: 'फिर से लें',
       simNote: 'डेमो मोड वही DSP + क्लासिफायर पाइपलाइन चलाता है जो कैमरे के लिए है।',
       camDenied: 'कैमरा उपलब्ध नहीं। डेमो मोड आज़माएं — वही पाइपलाइन चलती है।',
+      camFallback: 'यहाँ कैमरा उपलब्ध नहीं — सिंथेटिक डेमो सिग्नल से जारी (वही पाइपलाइन)',
       analyzing: 'डिवाइस पर विश्लेषण…',
       stQuality: 'सिग्नल गुणवत्ता जांच',
       stBeats: 'धड़कन खोज (पीक डिटेक्शन)',
@@ -195,6 +197,7 @@ const I18N = (() => {
       captureAgain: 'மீண்டும் எடு',
       simNote: 'டெமோ பயன்முறை கேமராவிற்கான அதே DSP + classifier-ஐ இயக்குகிறது.',
       camDenied: 'கேமரா இல்லை. டெமோ பயன்முறையை முயற்சிக்கவும்.',
+      camFallback: 'இங்கு கேமரா இல்லை — செயற்கை டெமோ சிக்னலுடன் தொடர்கிறது (அதே pipeline)',
       analyzing: 'சாதனத்தில் பகுப்பாய்வு…',
       stQuality: 'சிக்னல் தர சோதனை',
       stBeats: 'துடிப்பு கண்டறிதல்',
