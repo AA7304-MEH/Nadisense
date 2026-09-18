@@ -1,0 +1,16 @@
+{
+  "name": "nadisense",
+  "version": "1.0.0",
+  "private": true,
+  "description": "On-device AI cardiac rhythm screening from a phone camera. MIT-BIH AFDB-trained model; runs 100% in the browser.",
+  "scripts": {
+    "test": "node tests/run_tests.mjs && node tests/run_browser_smoke.mjs",
+    "test:unit": "node tests/run_tests.mjs",
+    "test:browser": "node tests/run_browser_smoke.mjs",
+    "build": "node tools/build_standalone.mjs",
+    "retrain": "python3 tools/train_real_data.py"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.0"
+  }
+}

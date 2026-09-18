@@ -36,7 +36,7 @@
   <!-- ======================= ONBOARD ======================= -->
   <section id="view-onboard" class="view active">
     <div class="hero">
-      <div class="hero-badge">TECHNOVA 2026 · MatricPhase</div>
+      <div class="hero-badge">TECHNOVA 2026 · Agent Matrix</div>
       <h1 data-i18n="heroTitle">A 60-second heart check, no hardware, no internet.</h1>
       <p class="hero-sub" data-i18n="heroSub">NadiSense turns any smartphone camera into a pulse monitor. Built for ASHA workers and PHCs in rural India — screen for irregular rhythm (AFib-like patterns) at the doorstep.</p>
       <div class="cta-row">
@@ -94,6 +94,8 @@
 
       <div class="state-line"><span id="capture-state" data-i18n="usingCam">Live camera feed</span>
         <span class="live-hr"><b id="live-hr">—</b> <span data-i18n="liveHr">live HR</span></span>
+        <span class="live-hr" id="live-beats-wrap" style="font-variant-numeric:tabular-nums"><b id="live-beats">0</b> <span data-i18n="liveBeats">beats</span></span>
+        <span class="live-hr" id="torch-wrap"><b id="torch-txt" data-i18n="torchWait">flash…</b></span>
       </div>
 
       <canvas id="wave" class="hidden"></canvas>
@@ -113,6 +115,17 @@
         <button id="btn-stop" class="btn danger" data-i18n="stop">Finish early</button>
       </div>
       <div id="cam-btn-row"></div>
+
+      <!-- camera failure panel: named per cause, with the exact fix -->
+      <div id="cam-error" class="cam-error hidden" role="alert">
+        <div class="cam-err-icon">📷</div>
+        <h3 id="cam-err-title"></h3>
+        <p id="cam-err-body" class="muted"></p>
+        <div class="btn-row">
+          <button id="cam-retry" class="btn primary" data-i18n="camRetry">Retry camera</button>
+          <button id="cam-todemo" class="btn ghost" data-i18n="camUseDemo">Use Demo Mode instead</button>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -135,7 +148,11 @@
     <div id="result-error" class="card hidden">
       <h2 data-i18n="errTitle">Could not read the pulse</h2>
       <p class="muted" data-i18n="errD">Not enough clean beats in the window. </p>
-      <button id="btn-retake" class="btn primary" data-i18n="retake">Retake test</button>
+      <p class="muted err-tips" id="err-tips" data-i18n="errCamTips">Common fixes: ① Use a phone — cover BOTH the rear camera and flashlight with your fingertip, flash ON.</p>
+      <div class="btn-row">
+        <button id="btn-retake" class="btn primary" data-i18n="retake">Retake test</button>
+        <button id="btn-err-demo" class="btn ghost" data-i18n="errDemo">Try Demo Mode instead</button>
+      </div>
     </div>
 
     <div id="result-dash" class="hidden">
@@ -227,7 +244,7 @@
 </main>
 
 <footer>
-  <div data-i18n="footNote">MatricPhase · TECHNOVA 2026 · TSM, Madurai</div>
+  <div data-i18n="footNote">Agent Matrix · TECHNOVA 2026 · TSM, Madurai</div>
 </footer>
 
 <script src="js/model_weights.js"></script>

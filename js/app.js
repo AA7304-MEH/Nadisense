@@ -40,6 +40,26 @@
   /* ------------------------------------------------------------------ */
   /* SOURCES                                                            */
   /* ------------------------------------------------------------------ */
+  /* Pick the camera channel with the strongest pulsatile contrast.
+     Score = relative std (AC/DC), penalised hard when the channel is
+     clipped near white (saturated) or near black. */
+  function pickCamChannel(gVals, rVals) {
+    const stat = (x) => {
+      let m = 0; for (const v of x) m += v;
+      m /= (x.length || 1);
+      let s = 0; for (const v of x) s += (v - m) * (v - m);
+      return { m, cv: Math.sqrt(s / (x.length || 1)) / Math.max(m, 1e-9) };
+    };
+    const score = (x) => {
+      const st = stat(x);
+      let sc = st.cv;
+      if (st.m > 240) sc *= 0.15;   // near clip: information is likely destroyed
+      if (st.m < 8)   sc *= 0.15;   // near black: nothing transmitting
+      return sc;
+    };
+    return score(rVals) > score(gVals) ? 'red' : 'green';
+  }
+
   const sources = {
     cam: null,
     simData: null,
@@ -53,20 +73,57 @@
       sources.simData = rec.signal;
       return rec;
     },
-    /* Return {t,v} window samples between t0 and t0+secs (uniform 30 Hz). */
+    /* Return a uniform-30Hz window of signal values from t0 to t0+secs.
+       Reads from app.buffer — the single archive BOTH sources write into.
+       (Reading the camera queue here was the camera-mode bug: captureLoop
+       drains that queue every frame, so any queue-based read saw ~1 frame
+       and produced a flat signal → "could not read the pulse".) */
     window: (t0, secs) => {
-      if (app.mode === 'camera' && sources.cam) {
-        // read() already resamples the queue; trim to the requested span
-        const full = sources.cam.read(secs + 1);
-        return full.slice(0, Math.floor(secs * 30));
-      }
-      // simulator: pre-generated 30 s signal
-      const n = Math.floor(secs * 30);
+      const n = Math.max(2, Math.floor(secs * 30));
       const out = new Float64Array(n);
+
+      if (app.mode === 'camera') {
+        const buf = app.buffer;            // [{t,v,r,g,b}], t seconds, ~30 Hz
+        if (!buf.length) return out;
+        // interpolate both channels
+        const gVals = new Float64Array(n), rVals = new Float64Array(n);
+        let j = 0;                          // two-pointer march (buf is time-sorted)
+        for (let i = 0; i < n; i++) {
+          const g = t0 + i / 30;
+          while (j < buf.length - 1 && buf[j + 1].t < g) j++;
+          const a = buf[j], b = buf[Math.min(buf.length - 1, j + 1)];
+          const d = Math.max(b.t - a.t, 1e-9);
+          const f = Math.max(0, Math.min(1, (g - a.t) / d));
+          // samples pre-dating the RGB fix only carry .v (= green) — fall back
+          const ag = a.g !== undefined ? a.g : a.v, bg = b.g !== undefined ? b.g : b.v;
+          gVals[i] = ag + (bg - ag) * f;
+          if (a.r !== undefined) rVals[i] = a.r + (b.r - a.r) * f;
+        }
+        // --- adaptive channel pick (once per capture, after ~3 s) ---------
+        // Flash-behind-fingertip SATURATES green (clip ≈ 255 flat) while the
+        // pulsatility survives in RED (transmission mode). Score both and use
+        // the better one; remember the choice for the whole capture.
+        if (!app.camChan && buf[buf.length - 1].t - buf[0].t >= 3) {
+          app.camChan = pickCamChannel(gVals, rVals, window);
+        }
+        const chosen = app.camChan === 'red' ? rVals : gVals;
+        // rescue: chosen channel went saturated later (grip tightened) → switch
+        if (app.camChan) {
+          let m = 0; for (const v of chosen) m += v; m /= chosen.length;
+          const sat = app.camChan === 'red' ? m > 235 : m > 240;
+          if (sat) app.camChan = app.camChan === 'red' ? 'green' : 'red';
+        }
+        out.set(app.camChan === 'red' ? rVals : gVals);
+        return out;
+      }
+
+      // simulator: pre-generated 30 s signal
+      const sd = sources.simData;
+      if (!sd || !sd.length) return out;            // defensive: never crash on null
       const start = Math.floor(t0 * 30);
       for (let i = 0; i < n; i++) {
         const idx = start + i;
-        out[i] = idx >= 0 && idx < sources.simData.length ? sources.simData[idx] : 0;
+        out[i] = idx >= 0 && idx < sd.length ? sd[idx] : 0;
       }
       return out;
     },
@@ -104,6 +161,10 @@
         for (const s of q) app.buffer.push(s);
         q.length = 0;
         waveCtx.t = lastT;
+        if (app.camChan) {
+          const el = $('#capture-state');
+          if (el) el.textContent = I18N.t('usingCam') + ' · ' + app.camChan.toUpperCase() + ' ch';
+        }
       }
     }
 
@@ -188,6 +249,8 @@
     bar.style.width = `${Math.round(q * 100)}%`;
     bar.style.background = q > 0.6 ? '#22c55e' : q > 0.35 ? '#f59e0b' : '#ef4444';
     $('#quality-txt').textContent = `${Math.round(q * 100)}%`;
+    const hint = $('.q-hint');
+    if (hint) hint.textContent = (app.mode === 'camera' && q <= 0.6) ? I18N.t('coachFlash') : I18N.t('hold');
   }
 
   function updateLiveHr() {
@@ -201,6 +264,8 @@
     if (!sig || sig.length < 60) return;
     const bp = DSP.bandpass(sig, 0.6, 3.5, 30);
     const pks = DSP.detectPeaks(bp);
+    const beatsEl = $('#live-beats');
+    if (beatsEl) beatsEl.textContent = pks.length;
     if (pks.length >= 4) {
       const rr = [];
       for (let i = 1; i < pks.length; i++) rr.push((pks[i] - pks[i - 1]) / 30);
@@ -219,10 +284,48 @@
   /* ------------------------------------------------------------------ */
   /* FLOW CONTROL                                                       */
   /* ------------------------------------------------------------------ */
+
+  // Pre-flight: getUserMedia only exists in secure contexts (https:// or
+  // localhost). file:// pages, plain http:// hosts and some in-app webviews
+  // hide it entirely — name the error so the panel can give the right fix.
+  function preflightCamera() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+      const e = new Error('getUserMedia unavailable in this context');
+      e.name = 'InsecureContext';
+      throw e;
+    }
+  }
+
+  // Map getUserMedia error names → the localized explanation + fix.
+  // Returns true if a panel was shown (caller stops; user decides).
+  function showCamError(err) {
+    const map = {
+      NotAllowedError: ['camErrBlockedT', 'camErrBlockedB'],
+      PermissionDeniedError: ['camErrBlockedT', 'camErrBlockedB'],  // legacy Chrome name
+      InsecureContext: ['camErrSecureT', 'camErrSecureB'],
+      SecurityError: ['camErrSecureT', 'camErrSecureB'],
+      NotFoundError: ['camErrNoCamT', 'camErrNoCamB'],
+      DevicesNotFoundError: ['camErrNoCamT', 'camErrNoCamB'],       // legacy name
+      NotReadableError: ['camErrBusyT', 'camErrBusyB'],
+      TrackStartError: ['camErrBusyT', 'camErrBusyB'],              // legacy name
+      AbortError: ['camErrBusyT', 'camErrBusyB'],
+    };
+    const keys = map[err && err.name] || ['camErrGenT', 'camErrGenB'];
+    const tEl = $('#cam-err-title'), bEl = $('#cam-err-body'), panel = $('#cam-error');
+    if (!tEl || !panel) return false;
+    tEl.textContent = I18N.t(keys[0]);
+    bEl.textContent = I18N.t(keys[1]);
+    panel.classList.remove('hidden');
+    panel.scrollIntoView && panel.scrollIntoView({ block: 'nearest' });
+    return true;
+  }
+
   async function startCapture(mode) {
+    $('#cam-error').classList.add('hidden');   // fresh attempt always clears the panel
     app.mode = mode;
     app.buffer = [];
     app.simCursor = 0;
+    app.camChan = null;                      // re-pick channel each capture
     app.answers = { q1: null, q2: null };
     app.qIndex = 0;
     show('capture');
@@ -232,7 +335,17 @@
 
     try {
       if (mode === 'camera') {
+        preflightCamera();                   // names non-secure contexts BEFORE the OS prompt path
+        const updTorch = (on) => {
+          const el = $('#torch-txt');
+          if (el) el.textContent = on ? I18N.t('torchOn') : I18N.t('torchOff');
+        };
+        updTorch(null);
         await sources.startCamera($('#cam-video'));
+        if (sources.cam) {
+          sources.cam.onTorch = updTorch;
+          updTorch(sources.cam.torch);
+        }
       } else {
         sources.startSim();
       }
@@ -246,11 +359,17 @@
       $('#capture-actions').classList.remove('hidden');
       $('#cam-btn-row').classList.add('hidden');
     } catch (e) {
-      // Camera blocked or unavailable (privacy mode, sandboxed iframe,
-      // desktop without webcam). Don't dead-end the user — fall back to
-      // the synthetic demo source, which exercises the identical pipeline.
-      console.warn('camera unavailable, falling back to demo source:', e);
+      // Never silently dead-end: tell the user WHAT blocked the camera and
+      // HOW to unblock it (this is what makes normal tabs == incognito),
+      // with Retry + Demo buttons. If the panel itself is somehow missing,
+      // fall back to the demo source so the screen still never dies.
+      console.warn('camera start failed:', e && e.name, e);
+      app.running = false;
+      $('#capture-state').textContent = '—';
+      if (showCamError(e)) return;
+      console.warn('error panel unavailable, falling back to demo source');
       app.mode = 'sim';
+      app.camChan = null;
       $('#cam-feed').classList.add('hidden');
       $('#sim-panel').classList.remove('hidden');
       $('#capture-state').textContent = I18N.t('camFallback');
@@ -289,7 +408,12 @@
       ? (app.simCursor / 30)
       : (app.buffer.length ? app.buffer[app.buffer.length - 1].t : 0);
     const t0 = Math.max(0, now - 30);
-    const sig = sources.window(t0, Math.min(30, now - t0 + 0.001));
+    let sig = sources.window(t0, Math.min(30, now - t0 + 0.001));
+    // camera warm-up: phone auto-exposure/auto-focus "hunts" for the first
+    // ~2 s and that ramp wrecks peak detection — analyse the stable tail.
+    if (app.mode === 'camera' && sig.length > 12 * 30) {
+      sig = sig.slice(2 * 30);
+    }
     const ft = DSP.features(sig);
     const det = ft ? DSP.detrend(sig) : null;
     const bp = ft ? DSP.bandpass(det, 0.6, 3.5, 30) : null;
@@ -322,6 +446,10 @@
     const color = lvlColors[level] || lvlColors.low;
 
     if (level === 'error' || !r.features) {
+      // mode-aware troubleshooting: a failed camera capture usually means
+      // flat webcam signal (no flash) — say why and what to do next.
+      $('#err-tips').dataset.i18n = r.mode === 'camera' ? 'errCamTips' : 'errSimTips';
+      $('#err-tips').textContent = I18N.t(r.mode === 'camera' ? 'errCamTips' : 'errSimTips');
       $('#result-error').classList.remove('hidden');
       $('#result-dash').classList.add('hidden');
       $('#btn-new').classList.remove('hidden');
@@ -523,7 +651,7 @@
 <tr><td>Beats analysed</td><td>${f.n_beats}</td></tr></table>
 <p><b>Questionnaire:</b> history — ${app.answers.q1 ? (app.answers.q1.yes ? 'Yes' : 'No') : 'not asked'}; symptoms — ${app.answers.q2 ? app.answers.q2.text : 'not asked'}</p>
 <div class="warn"><b>Next step:</b> ${r.level === 'high' ? 'Refer for a 12-lead ECG within 7 days. This is a screening signal — not a diagnosis.' : r.level === 'mid' ? 'Repeat screening in 2 weeks; refer sooner if symptomatic.' : 'Routine follow-up in 6 months; seek care sooner if symptoms appear.'}</div>
-<p class="foot">${I18N.t('disclaimer')}<br>NadiSense v0.9 · MatricPhase · TECHNOVA 2026 · generated on-device, no data uploaded.</p>
+<p class="foot">${I18N.t('disclaimer')}<br>NadiSense v1.0 · Agent Matrix · TECHNOVA 2026 · generated on-device, no data uploaded.</p>
 <button class="no-print" onclick="window.print()">Print</button>
 </body></html>`;
   }
@@ -586,6 +714,9 @@
     $('#btn-stop').addEventListener('click', stopCapture);
     $('#sim-seed').addEventListener('input', (e) => { app.simSeed = parseInt(e.target.value || '7', 10); });
     $('#btn-retake').addEventListener('click', () => show('onboard'));
+    $('#btn-err-demo').addEventListener('click', () => startCapture('sim'));
+    $('#cam-retry').addEventListener('click', () => startCapture('camera'));  // panel auto-hides on fresh start
+    $('#cam-todemo').addEventListener('click', () => startCapture('sim'));
     $('#btn-new').addEventListener('click', () => show('onboard'));
     $('#btn-report').addEventListener('click', buildReport);
     $('#btn-copy').addEventListener('click', copySummary);
@@ -620,18 +751,42 @@
     app.running = false;
     analyze();
   }
-  window.__nadi = { debugRun, getApp: () => app };
+  window.__nadi = { debugRun, getApp: () => app, sources };
 
   document.addEventListener('DOMContentLoaded', () => {
-    I18N.setLang('en');
-    I18N.applyDom();
-    wire();
-    renderLogbook();
-    // announce the model facts in the onboarding footer
-    if (typeof NADI_MODEL !== 'undefined') {
-      const meta = NADI_MODEL.meta || {};
-      $('#model-facts').textContent =
-        `${meta.architecture || 'MLP 12-20-10-1'} · val acc ${(meta.val_accuracy * 100).toFixed(1)}% · sens ${(meta.val_sensitivity * 100).toFixed(1)}% · spec ${(meta.val_specificity * 100).toFixed(1)}%`;
+    // Self-heal stale state in normal tabs: unregister any service worker and
+    // wipe old caches left behind by earlier builds, then browsers always run
+    // the current version — the "works in incognito but not here" class of bug.
+    try {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations()
+          .then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+      }
+      if (window.caches && window.caches.keys) {
+        caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
+      }
+    } catch (e) { /* cleanup is best-effort */ }
+
+    try {
+      console.info('NadiSense v1.0 · Agent Matrix · on-device AI (MIT-BIH AFDB-trained model) · nothing uploaded');
+      I18N.setLang('en');
+      I18N.applyDom();
+      wire();
+      renderLogbook();
+      // announce the model facts in the onboarding footer
+      if (typeof NADI_MODEL !== 'undefined') {
+        const meta = NADI_MODEL.meta || {};
+        $('#model-facts').textContent =
+          `${meta.architecture || 'MLP 12-20-10-1'} · val acc ${(meta.val_accuracy * 100).toFixed(1)}% · sens ${(meta.val_sensitivity * 100).toFixed(1)}% · spec ${(meta.val_specificity * 100).toFixed(1)}%`;
+      }
+    } catch (e) {
+      // A boot error must never produce a black screen — surface it plainly.
+      console.error('NadiSense boot failed:', e);
+      const s = document.createElement('div');
+      s.style.cssText = 'position:fixed;bottom:8px;left:8px;right:8px;background:#7f1d1d;color:#fff;'
+        + 'padding:10px 14px;border-radius:10px;font-size:13px;z-index:99';
+      s.textContent = 'NadiSense failed to start — please reload the page (hard refresh: Ctrl+Shift+R).';
+      document.body.appendChild(s);
     }
   });
 })();

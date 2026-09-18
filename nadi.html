@@ -1,0 +1,2318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NadiSense — 60-second AI heart screening</title>
+<meta name="description" content="On-device AI cardiac rhythm screening for rural India. Camera-only PPG, offline, vernacular.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230f766e'/%3E%3Cpath d='M10 34h10l4-9 6 16 6-24 6 30 5-13h7' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+/* NadiSense — dark clinical theme, mobile-first (ASHA worker phones) */
+
+:root {
+  --bg: #071822;
+  --bg2: #0b2231;
+  --card: #0e2838;
+  --card2: #123244;
+  --line: #1d4156;
+  --text: #e8f1f6;
+  --muted: #93a9b8;
+  --teal: #2dd4bf;
+  --teal-d: #0f766e;
+  --green: #22c55e;
+  --amber: #f59e0b;
+  --red: #ef4444;
+  --blue: #38bdf8;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body {
+  background: radial-gradient(1200px 600px at 80% -10%, #0d3040 0%, var(--bg) 55%) fixed, var(--bg);
+  color: var(--text);
+  font: 15px/1.55 system-ui, "Segoe UI", Roboto, "Noto Sans", sans-serif;
+  min-height: 100vh;
+}
+h1 { font-size: clamp(26px, 4.5vw, 40px); line-height: 1.15; margin: 8px 0 10px; }
+h2 { font-size: clamp(19px, 3vw, 26px); margin: 0 0 6px; }
+h3 { font-size: 15px; margin: 0 0 10px; color: var(--text); }
+p { margin: 8px 0; }
+.muted { color: var(--muted); font-size: 13.5px; }
+.hidden { display: none !important; }
+
+/* ---------- header ---------- */
+.top { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;
+  padding: 14px clamp(14px, 4vw, 40px); border-bottom: 1px solid var(--line); background: rgba(7,24,34,.75); position: sticky; top: 0; z-index: 5; backdrop-filter: blur(6px); }
+.brand { display: flex; gap: 12px; align-items: center; }
+.brand svg { flex: 0 0 auto; }
+.brand-name { font-weight: 800; font-size: 19px; letter-spacing: .3px; }
+.brand-sub { color: var(--muted); font-size: 12px; }
+.top-right { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
+.offline-badge { color: var(--teal); font-size: 12px; background: rgba(45,212,191,.08); border: 1px solid rgba(45,212,191,.25);
+  padding: 5px 10px; border-radius: 999px; white-space: nowrap; }
+.langs { display: flex; gap: 6px; }
+.lang-pill { background: transparent; color: var(--muted); border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 11px; font-size: 12.5px; cursor: pointer; }
+.lang-pill.active { background: var(--teal-d); color: #fff; border-color: var(--teal-d); }
+
+/* ---------- layout ---------- */
+main { max-width: 1080px; margin: 0 auto; padding: clamp(16px, 4vw, 40px) clamp(14px, 4vw, 40px) 40px; }
+.view { display: none; animation: fade .35s ease; }
+.view.active { display: block; }
+@keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+.card { background: linear-gradient(180deg, var(--card) 0%, var(--bg2) 100%); border: 1px solid var(--line);
+  border-radius: 16px; padding: clamp(14px, 3vw, 26px); margin-bottom: 16px; box-shadow: 0 12px 30px rgba(0,0,0,.25); }
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+@media (max-width: 860px) { .grid-2, .grid-4 { grid-template-columns: 1fr; } }
+
+/* ---------- buttons ---------- */
+.btn { border: 1px solid var(--line); background: var(--card2); color: var(--text); border-radius: 12px;
+  padding: 10px 18px; font-size: 14.5px; font-weight: 600; cursor: pointer; transition: .15s; }
+.btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
+.btn.big { padding: 14px 26px; font-size: 16px; }
+.btn.primary { background: linear-gradient(135deg, var(--teal-d), #115e59); border-color: var(--teal-d); color: #fff; }
+.btn.ghost { background: transparent; }
+.btn.danger { background: linear-gradient(135deg, #7f1d1d, #991b1b); border-color: #b91c1c; color: #fff; }
+.btn.sm { padding: 7px 12px; font-size: 12.5px; }
+.btn-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+.cta-row { display: flex; gap: 12px; flex-wrap: wrap; margin: 18px 0 6px; }
+.link-btn { background: none; border: none; color: var(--teal); cursor: pointer; font-size: 12.5px; }
+
+/* ---------- hero ---------- */
+.hero { margin-bottom: 22px; }
+.hero-badge { display: inline-block; color: var(--teal); border: 1px solid rgba(45,212,191,.4); background: rgba(45,212,191,.07);
+  padding: 4px 12px; border-radius: 999px; font-size: 12px; letter-spacing: .5px; }
+.hero-sub { color: var(--muted); max-width: 720px; }
+.model-chip { margin-top: 10px; color: var(--muted); font-size: 12px; background: rgba(56,189,248,.06);
+  border: 1px dashed #1d4156; padding: 6px 10px; border-radius: 10px; }
+
+/* ---------- how-it-works ---------- */
+.step-n { width: 30px; height: 30px; border-radius: 999px; background: var(--teal-d); color: #fff;
+  display: flex; align-items: center; justify-content: center; font-weight: 800; margin-bottom: 10px; }
+.step h3 { font-size: 13.5px; color: var(--teal); }
+.step p { font-size: 13px; color: var(--muted); }
+
+/* ---------- capture ---------- */
+.capture-card { max-width: 760px; margin: 0 auto; }
+.cam-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #000; margin: 12px 0; }
+#cam-video { width: 100%; display: block; transform: scaleX(-1); }
+.roi { position: absolute; left: 50%; top: 50%; width: 26%; aspect-ratio: 1; transform: translate(-50%, -50%);
+  border: 3px dashed rgba(45,212,191,.85); border-radius: 50%; box-shadow: 0 0 0 999px rgba(0,0,0,.35);
+  pointer-events: none; }
+.sim-panel { background: rgba(56,189,248,.05); border: 1px dashed #1d4156; border-radius: 12px; padding: 12px 14px; margin: 12px 0; }
+
+/* camera-failure panel: what went wrong + how to fix, never a dead end */
+.cam-error { background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.45);
+  border-radius: 12px; padding: 16px 16px 8px; margin: 14px 0; text-align: left; }
+.cam-error .cam-err-icon { font-size: 26px; }
+.cam-error h3 { margin: 6px 0 8px; font-size: 16px; color: #fbbf24; }
+.cam-error p { margin: 0 0 6px; font-size: 13.5px; line-height: 1.55; }
+.cam-error .btn-row { margin-top: 12px; }
+.sim-kind { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+select, input[type="number"], input[type="text"] { background: var(--bg2); border: 1px solid var(--line); color: var(--text);
+  border-radius: 10px; padding: 9px 12px; font-size: 14px; }
+select:focus, input:focus { outline: 2px solid rgba(45,212,191,.5); }
+#sim-seed { width: 70px; }
+.state-line { display: flex; justify-content: space-between; align-items: center; margin: 10px 0 6px; color: var(--muted); font-size: 13px; }
+.live-hr b { color: var(--teal); font-size: 18px; }
+
+#wave { width: 100%; height: 200px; display: block; background: rgba(0,0,0,.35);
+  border: 1px solid var(--line); border-radius: 12px; margin: 8px 0; }
+
+.quality { margin: 8px 0 4px; }
+.q-top { display: flex; justify-content: space-between; font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
+.q-track, .time-track { height: 8px; border-radius: 999px; background: var(--bg2); overflow: hidden; }
+.q-fill { height: 100%; border-radius: 999px; transition: width .4s ease, background .4s; }
+.q-hint { font-size: 12px; color: var(--muted); margin-top: 5px; }
+
+.time-row { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.time-track { flex: 1; }
+.time-fill { height: 100%; background: linear-gradient(90deg, var(--teal-d), var(--teal)); transition: width .3s linear; }
+.time-txt { font-variant-numeric: tabular-nums; color: var(--teal); font-weight: 700; }
+
+/* ---------- analyzing ---------- */
+.analyze-card { max-width: 560px; margin: 40px auto; text-align: center; }
+.spinner { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 50%;
+  border: 4px solid var(--line); border-top-color: var(--teal); animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.steps { list-style: none; padding: 0; margin: 16px 0 0; text-align: left; }
+.steps li { display: flex; justify-content: space-between; padding: 10px 14px; border: 1px solid var(--line);
+  border-radius: 10px; margin-bottom: 8px; color: var(--muted); font-size: 14px; background: var(--bg2); }
+.steps li.done { color: var(--text); border-color: rgba(45,212,191,.5); }
+.steps .chk { color: var(--teal); font-weight: 800; }
+
+/* ---------- result ---------- */
+.result-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+.chip { padding: 8px 16px; border-radius: 999px; color: #fff; font-weight: 800; font-size: 14px; }
+.gauge-card { text-align: center; }
+#p-value { font-size: 54px; font-weight: 800; line-height: 1.05; color: var(--text); }
+#p-label { margin-bottom: 6px; }
+#gauge { max-width: 300px; }
+.gauge-scale { display: flex; justify-content: space-between; font-size: 12px; margin: 6px auto 10px; max-width: 300px; }
+.level-body { font-size: 14px; color: var(--muted); text-align: left; max-width: 340px; margin: 8px auto 0; }
+
+.metric-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+@media (max-width: 640px) { .metric-grid { grid-template-columns: repeat(2, 1fr); } }
+.metric { background: var(--bg2); border: 1px solid var(--line); border-radius: 12px; padding: 10px 12px; }
+.m-k { font-size: 11px; color: var(--muted); letter-spacing: .4px; text-transform: uppercase; }
+.m-v { font-size: 21px; font-weight: 800; color: var(--teal); }
+.m-u { font-size: 11px; color: var(--muted); font-weight: 400; margin-left: 3px; }
+.notes { margin-top: 12px; }
+.notes ul { margin: 0; padding-left: 18px; color: var(--amber); font-size: 13px; }
+
+.plots canvas, #review-wave { width: 100%; height: 170px; display: block; background: rgba(0,0,0,.3);
+  border: 1px solid var(--line); border-radius: 10px; }
+.q-card .q-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.q-text { font-size: 14.5px; }
+#q-status { margin-top: 8px; min-height: 18px; }
+#q-answers { margin-top: 4px; }
+
+#patient-name { width: 100%; max-width: 420px; margin-top: 6px; }
+.log-head { display: flex; justify-content: space-between; align-items: center; }
+.log-row { display: flex; gap: 10px; align-items: center; font-size: 13px; color: var(--muted);
+  border-bottom: 1px dashed var(--line); padding: 7px 0; }
+.log-row .dot { width: 9px; height: 9px; border-radius: 50%; }
+.log-nums { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--text); }
+.log-empty { color: var(--muted); font-size: 13px; }
+
+.disclaimer { color: var(--muted); font-size: 12px; text-align: center; max-width: 720px; margin: 18px auto; }
+footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 18px; border-top: 1px solid var(--line); }
+details summary { cursor: pointer; color: var(--teal); font-weight: 600; }
+details p { color: var(--muted); font-size: 13.5px; }
+
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <svg viewBox="0 0 64 64" width="38" height="38" aria-hidden="true">
+      <circle cx="32" cy="32" r="30" fill="#0f766e"/>
+      <path d="M10 34h10l4-9 6 16 6-24 6 30 5-13h7" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <div>
+      <div class="brand-name" data-i18n="appName">NadiSense</div>
+      <div class="brand-sub" data-i18n="tagline">On-device AI cardiac rhythm screening</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <div class="offline-badge"><span data-i18n="offline">offline-first · no data leaves the phone</span></div>
+    <div class="langs">
+      <button class="lang-pill active" data-lang="en">EN</button>
+      <button class="lang-pill" data-lang="hi">हिं</button>
+      <button class="lang-pill" data-lang="ta">த</button>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- ======================= ONBOARD ======================= -->
+  <section id="view-onboard" class="view active">
+    <div class="hero">
+      <div class="hero-badge">TECHNOVA 2026 · Agent Matrix</div>
+      <h1 data-i18n="heroTitle">A 60-second heart check, no hardware, no internet.</h1>
+      <p class="hero-sub" data-i18n="heroSub">NadiSense turns any smartphone camera into a pulse monitor. Built for ASHA workers and PHCs in rural India — screen for irregular rhythm (AFib-like patterns) at the doorstep.</p>
+      <div class="cta-row">
+        <button id="btn-start" class="btn primary big" data-i18n="start">Start Screening</button>
+        <button id="btn-demo" class="btn ghost big" data-i18n="demo">Demo Mode (synthetic signal)</button>
+      </div>
+      <div class="cta-row">
+        <div class="model-chip" id="model-facts">MLP 12-20-10-1 · trained on HRV features</div>
+      </div>
+    </div>
+
+    <div class="grid-4">
+      <div class="card step"><div class="step-n">1</div><h3 data-i18n="how1t">1 · Place fingertip on camera</h3><p data-i18n="how1d">Front or rear camera, covered by the fingertip. Green channel = blood volume.</p></div>
+      <div class="card step"><div class="step-n">2</div><h3 data-i18n="how2t">2 · Wait 60 seconds</h3><p data-i18n="how2d">We capture the pulse waveform, clean motion artifacts, find every beat.</p></div>
+      <div class="card step"><div class="step-n">3</div><h3 data-i18n="how3t">3 · On-device AI screens</h3><p data-i18n="how3d">12 HRV features → tiny neural net (12→20→10→1). Runs offline in under a second.</p></div>
+      <div class="card step"><div class="step-n">4</div><h3 data-i18n="how4t">4 · Get a care level</h3><p data-i18n="how4d">Green — routine. Amber — repeat in 2 weeks. Red — refer for an ECG.</p></div>
+    </div>
+
+    <div class="card privacy">
+      <strong>PRIVACY</strong> <span data-i18n="privacy">Privacy: no image, video or signal is stored or uploaded. Processing happens on this phone.</span>
+    </div>
+
+    <details id="method-details" class="card">
+      <summary>Method &amp; limits</summary>
+      <p data-i18n="methodBody">NadiSense computes pulse-transit dynamics from fingertip video (reflectance PPG) and derives 13 heart-rate-variability features (SDNN, RMSSD, pNN50, SD1/SD2, LF/HF, sample entropy, turning-point ratio, ectopy-like beat fraction, spectral entropy, irregularity %). A 3-layer network trained on HRV patterns returns P(irregular rhythm). This is a SCREENING aid, not a diagnosis — irregularity has many causes (stress, caffeine, ectopic beats), and a negative result does not rule out heart disease.</p>
+    </details>
+  </section>
+
+  <!-- ======================= CAPTURE ======================= -->
+  <section id="view-capture" class="view">
+    <div class="card capture-card">
+      <h2 data-i18n="captureTitle">Cover the camera with your fingertip</h2>
+      <p class="muted" data-i18n="captureSub">Press gently (not hard), sit still, breathe normally.</p>
+
+      <div id="cam-feed" class="cam-wrap hidden">
+        <video id="cam-video" playsinline muted autoplay></video>
+        <div class="roi"></div>
+      </div>
+
+      <div id="sim-panel" class="sim-panel hidden">
+        <div class="sim-kind">
+          <label data-i18n="usingSim" for="sim-kind">Synthetic demo signal (test fixture)</label>
+          <select id="sim-kind">
+            <option value="normal">Normal sinus rhythm</option>
+            <option value="lowhrv">Low HRV (stressed / risk)</option>
+            <option value="afib" selected>Atrial fibrillation-like</option>
+            <option value="noisy">With motion artifact</option>
+            <option value="weak">Weak / flat signal</option>
+          </select>
+          <label class="seed" data-i18n="seedLabel" for="sim-seed">simulation seed</label>
+          <input id="sim-seed" type="number" value="7" min="1" max="999">
+        </div>
+        <p class="muted" data-i18n="simNote">Demo mode feeds a simulated pulse waveform through the same DSP + classifier used for camera capture.</p>
+      </div>
+
+      <div class="state-line"><span id="capture-state" data-i18n="usingCam">Live camera feed</span>
+        <span class="live-hr"><b id="live-hr">—</b> <span data-i18n="liveHr">live HR</span></span>
+        <span class="live-hr" id="live-beats-wrap" style="font-variant-numeric:tabular-nums"><b id="live-beats">0</b> <span data-i18n="liveBeats">beats</span></span>
+        <span class="live-hr" id="torch-wrap"><b id="torch-txt" data-i18n="torchWait">flash…</b></span>
+      </div>
+
+      <canvas id="wave" class="hidden"></canvas>
+
+      <div id="quality-box" class="quality hidden">
+        <div class="q-top"><span data-i18n="quality">signal quality</span><span id="quality-txt">0%</span></div>
+        <div class="q-track"><div id="quality-bar" class="q-fill" style="width:0%"></div></div>
+        <div class="q-hint" data-i18n="hold">Hold still…</div>
+      </div>
+
+      <div class="time-row">
+        <div class="time-track"><div id="time-bar" class="time-fill" style="width:0%"></div></div>
+        <span id="time-txt" class="time-txt">30s</span>
+      </div>
+
+      <div id="capture-actions" class="hidden">
+        <button id="btn-stop" class="btn danger" data-i18n="stop">Finish early</button>
+      </div>
+      <div id="cam-btn-row"></div>
+
+      <!-- camera failure panel: named per cause, with the exact fix -->
+      <div id="cam-error" class="cam-error hidden" role="alert">
+        <div class="cam-err-icon">📷</div>
+        <h3 id="cam-err-title"></h3>
+        <p id="cam-err-body" class="muted"></p>
+        <div class="btn-row">
+          <button id="cam-retry" class="btn primary" data-i18n="camRetry">Retry camera</button>
+          <button id="cam-todemo" class="btn ghost" data-i18n="camUseDemo">Use Demo Mode instead</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================= ANALYZING ======================= -->
+  <section id="view-analyzing" class="view">
+    <div class="card analyze-card">
+      <div class="spinner"></div>
+      <h2 id="analyzing" data-i18n="analyzing">Analyzing on-device…</h2>
+      <ol class="steps">
+        <li id="step-0"><span data-i18n="stQuality">Signal quality check</span><span class="chk">…</span></li>
+        <li id="step-1"><span data-i18n="stBeats">Peak detection (beat finding)</span><span class="chk">…</span></li>
+        <li id="step-2"><span data-i18n="stFeatures">12 HRV features</span><span class="chk">…</span></li>
+        <li id="step-3"><span data-i18n="stClassify">Neural net inference</span><span class="chk">…</span></li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ======================= RESULT ======================= -->
+  <section id="view-result" class="view">
+    <div id="result-error" class="card hidden">
+      <h2 data-i18n="errTitle">Could not read the pulse</h2>
+      <p class="muted" data-i18n="errD">Not enough clean beats in the window. </p>
+      <p class="muted err-tips" id="err-tips" data-i18n="errCamTips">Common fixes: ① Use a phone — cover BOTH the rear camera and flashlight with your fingertip, flash ON.</p>
+      <div class="btn-row">
+        <button id="btn-retake" class="btn primary" data-i18n="retake">Retake test</button>
+        <button id="btn-err-demo" class="btn ghost" data-i18n="errDemo">Try Demo Mode instead</button>
+      </div>
+    </div>
+
+    <div id="result-dash" class="hidden">
+      <div class="result-head">
+        <div>
+          <h2 data-i18n="resultTitle">Screening result</h2>
+          <div class="muted" data-i18n="duration">30 s window</div>
+        </div>
+        <div id="level-chip" class="chip">—</div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card gauge-card">
+          <div id="p-label" class="muted" data-i18n="pLabel">P(irregular rhythm)</div>
+          <div id="p-value" class="p-value">0%</div>
+          <svg id="gauge" viewBox="0 0 200 122" width="100%" aria-hidden="true">
+            <path d="M 20 110 A 80 80 0 0 1 180 110" fill="none" stroke="#134e4a" stroke-width="15" stroke-linecap="round"/>
+            <path d="M 24.5 108.7 A 76 76 0 0 1 60.5 48.9" fill="none" stroke="#22c55e" stroke-width="9" stroke-linecap="round"/>
+            <path d="M 60.5 48.9 A 76 76 0 0 1 139.5 48.9" fill="none" stroke="#f59e0b" stroke-width="9" stroke-linecap="round"/>
+            <path d="M 139.5 48.9 A 76 76 0 0 1 175.5 108.7" fill="none" stroke="#ef4444" stroke-width="9" stroke-linecap="round"/>
+            <g id="gauge-needle" transform="rotate(-90 100 100)">
+              <line x1="100" y1="100" x2="100" y2="26" stroke="#f8fafc" stroke-width="4" stroke-linecap="round"/>
+              <circle cx="100" cy="100" r="7" fill="#f8fafc"/>
+            </g>
+            <text x="20" y="121" font-size="10" fill="#94a3b8">0</text>
+            <text x="176" y="121" font-size="10" fill="#94a3b8">1</text>
+          </svg>
+          <div class="gauge-scale">
+            <span style="color:#22c55e" data-i18n="levelLow">regular</span>
+            <span style="color:#f59e0b" data-i18n="levelMid">repeat</span>
+            <span style="color:#ef4444" data-i18n="levelHigh">refer</span>
+          </div>
+          <p id="level-body" class="level-body">—</p>
+        </div>
+
+        <div class="card">
+          <h3 data-i18n="metrics">HRV metrics</h3>
+          <div id="metric-grid" class="metric-grid"></div>
+          <div id="notes" class="notes"></div>
+        </div>
+      </div>
+
+      <div class="grid-2 plots">
+        <div class="card">
+          <h3 class="muted">Tachogram (RR intervals)</h3>
+          <canvas id="tachogram"></canvas>
+        </div>
+        <div class="card">
+          <h3 class="muted">Poincaré plot</h3>
+          <canvas id="poincare"></canvas>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 class="muted">30 s pulse waveform · ● detected beats</h3>
+        <canvas id="review-wave"></canvas>
+      </div>
+
+      <div class="card q-card">
+        <h3 data-i18n="qTitle">2 quick questions (voice or type)</h3>
+        <div class="q-row">
+          <span id="q-text" class="q-text">—</span>
+          <button id="btn-ask-voice" class="btn ghost" data-i18n="askLater">Ask via voice</button>
+        </div>
+        <button id="btn-q-skip" class="btn ghost sm" data-i18n="qSkip">Skip (recommended if filling solo)</button>
+        <div id="q-status" class="muted"></div>
+        <div id="q-answers" class="muted"></div>
+      </div>
+
+      <div class="card">
+        <label for="patient-name" data-i18n="reportAsk">Patient / person name (optional)</label>
+        <input id="patient-name" type="text" maxlength="60">
+        <div class="btn-row">
+          <button id="btn-report" class="btn primary" data-i18n="saveReport">Print / download report</button>
+          <button id="btn-copy" class="btn ghost" data-i18n="copySummary">Copy summary</button>
+          <button id="btn-new" class="btn ghost" data-i18n="newTest">New test</button>
+        </div>
+      </div>
+
+      <div id="logbook" class="card hidden">
+        <div class="log-head"><h3 data-i18n="logbook">Recent tests (this phone only)</h3>
+          <button id="btn-clear-log" class="link-btn" data-i18n="clearLog">clear</button></div>
+        <div id="logbook-list"></div>
+      </div>
+
+      <p class="disclaimer" data-i18n="disclaimer">NadiSense is a screening aid, not a medical device. It does not diagnose any condition. Always confirm with a qualified clinician and a standard ECG.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div data-i18n="footNote">Agent Matrix · TECHNOVA 2026 · TSM, Madurai</div>
+</footer>
+
+<script>
+// Auto-generated by tools/train_real_data.py - do not edit by hand.
+// REAL PATIENT DATA model: MIT-BIH AFDB (cardiologist-annotated).
+const NADI_MODEL = {
+  features: ["hrMean", "sdnn", "rmssd", "pnn50", "sd1", "sd2", "sd1sd2", "lf_hf", "s_ent", "turning", "irr", "pvc"],
+  mean: [81.54390120940789, 83.49197902108355, 118.21380471440956, 35.277185863595356, 83.54521640006763, 80.65905274776381, 1.02719023956387, 0.8005113817244986, 0.7714521625941114, 0.39018644236869693, 11712.360048825065, 0.12930882227882043],
+  scale: [20.18202375209747, 68.21348816578758, 103.57139717185494, 33.79877794759492, 73.2157167322794, 66.16102198893046, 0.9543120737035924, 1.53286758068416, 0.16413438958417376, 0.11670102809608944, 11018.294469799004, 0.16140506887640507],
+  W1: [-0.027608947569334245, -0.32327436017933076, 0.384062600034691, 0.554138062418366, -0.8468585244636685, -0.5235942778235382, 0.13350469880273363, 0.32155620401148205, -0.5577445437984044, -0.36976213311413186, 0.5643393361466469, 0.18559998249672627, -0.49168910445871394, 0.47007762240722495, 0.1255664884615514, -0.5075119286899639, 0.09361306050737707, -0.31311389369204384, 0.8436272922303961, -0.3129555072181309, 0.15015002155552415, -0.3138786880422795, 0.46375140179990504, -0.27614003552368316, -0.21056040705481147, 0.01535650790906674, 0.19439334139314213, 0.18172170858298264, 0.18822709414628389, 0.11548628526393408, 0.902989910210498, -0.20176886017099493, -0.09284725620770416, -0.30746753720493963, 0.45673747142830884, 0.42218701493429656, -0.08216097812772764, -0.35575994849808396, -0.45335530618191694, 0.19175786351882215, 0.06718381703688074, 0.1257377956492189, -0.3434213724327913, 0.1404093541168534, 0.0018601033151899855, 0.09863386128626224, 0.3034631465420159, 0.10978701818537173, 0.32622273586883316, -0.04954287742774444, 0.138086996103302, 0.2265304504951352, -0.5303005374596548, -0.07469067399463604, -0.06595783777652707, -0.2538544813359761, -0.14940599342018643, 0.6206918837713772, -0.5288106476337663, 0.28040154153923497, -1.1412207392426896, -0.20840109647250113, 0.0002491836842107475, 1.2777672260013022, 0.21140298971314306, -0.024063448293850643, -0.17370938265470004, -0.10188651080173261, 0.2239311301101608, -0.14453935502480864, -0.46634280701845443, -0.43727875515295717, -0.3411756819708664, 0.2318714479050964, 0.04219262474633993, 0.5327627985970854, -0.19903909407026651, 0.21079065351317997, 0.026049225569000085, -0.46369274834302165, -0.027336794664268124, -0.36002472141430997, -0.21775187178009361, -0.12052885247832275, -0.5335110008125659, 0.21673295872690218, -0.2445636920764723, 0.0123190360343216, 0.24579605953440337, 0.1112121291951027, 0.2912623821348541, -0.0718622406540578, -0.10692219319402649, 0.01844999459326052, -0.5593264242975339, -0.5895448979834897, -0.57106909932649, -0.39658007560424835, -0.009049950981480542, -0.4699415217920338, 0.08548606558414643, 0.3340834891590835, -0.17873528694381519, 0.3399332057512946, -0.41504653029524874, -0.0543148790670888, -0.3960767427355676, 0.22147128813491818, 0.13369599619870823, -0.831562881710913, 0.3475769697739856, 0.06734659080422761, -0.2623353085106819, -0.5026156392964841, 0.19940994134992354, -0.06924929006099322, 0.03582928558867244, 0.007198101043031677, 0.4351652962758039, -0.24277621959687204, -0.6718904423173173, 0.25767560113134946, 0.10948847990628698, 0.48266285361022687, 0.3167834715741894, 0.3327215972761578, 0.597678050782605, -0.6943580283731742, -0.15392273330644407, -0.36722011314841907, -0.2549415413342519, -0.6044622333962251, 0.36455143738773516, -0.1546812070261408, -0.5396244898761676, -0.5935575354785929, 0.1892952567324, 0.3561920964030364, 0.856042081315598, 1.2776229710133842, 0.2815525189449037, -0.48198155206072674, -0.8804878057328706, -0.18754924173959006, -0.2936558050978335, 0.15448512485956734, -0.13724620740336593, -0.18494165101262297, 0.5378701184357154, 0.09499176611587642, -0.1038385547586217, -0.4120849606331777, -0.42486532399685517, -0.2142979820401044, -0.07897169983604967, 0.7336788351661058, 0.014520041129470166, 0.3167419589320974, -0.10331760830421714, -0.5291609214645612, -0.1534185849720896, -0.36558766145698246, 0.8184629725897122, -0.38226375051834943, 0.22211439736666086, -0.29297134966179705, 0.3620507389614544, 0.03062437971159247, -0.2006145511880756, -0.07715933564135476, -0.13729887422884757, 0.1080746586922043, -0.18599906715912395, -0.5560177352409591, -0.5111651994737819, 0.21963279509084202, 0.49574885138582386, 0.1616980207513519, 0.02354579364759056, 0.22446066146561622, 0.2560829469877672, -0.05532640104030577, -0.13815984682673735, 0.5655884537190361, 0.21475667039267968, 0.3317159875712147, -0.15033644571760124, -0.5391402000220322, -0.615667386575828, 0.624615539313192, 0.5900114310076736, 0.12364431714320082, -0.18066702657064598, 0.3918822127869136, -0.5904026522745874, -0.33370766595133194, 0.3647581345247287, -0.02621679961423206, -0.07016595906540674, 0.161440610878196, 0.6696998479925067, 0.7292402647098047, 0.06897393673308634, 0.309714242406978, -0.8543325834280847, 0.16428965192348058, -0.4077075791677067, -0.9091464165998852, -0.3222068490904834, 0.14831246906850837, 0.2965640334172097, -0.5523012761860974, 0.08373890356806146, -0.29154829898395834, 0.028920679725033906, 0.1328410600740001, 0.39332873323853745, 0.5575247002273699, 0.1041661326847427, 0.011430689786624822, 0.14680511690254727, 0.13436835467297795, 0.03267161779073159, -0.27869246182296703, 0.05645039527602768, 0.29955640909383663, 1.039149462803963, 0.7383894953627955, -0.2965372881425827, -0.037255231374286726, -0.6089400999676154, -0.302280929007467, 0.08866562109824883, 0.45246106719810214, -0.17802522568549894, -0.4400730403323506, -0.8204969217384969, -0.136048342060987, -0.533745270522939, -0.28333113486913203], b1: [-0.22152446069626272, 0.10255606166461328, 0.011631390042802815, -0.030855118575335856, -0.04546314090683654, 0.7908809801889419, 0.025061129950679707, 0.1700142356977978, -0.3682493593856373, -0.06788820854988382, 0.23834034151622188, -0.09692218134923666, 0.06799934037165875, -0.2628763568515292, 0.026897480124445306, 0.029919216309133027, 0.4345226914177104, 0.011160597360431882, 0.426822465096058, 0.0652535342305603],
+  W2: [-0.13240749191368517, -0.068046316552412, -0.5981877087711214, -1.081060886946805, 0.788158471444475, -0.23472996838951568, -0.6875971379497313, 0.729639202128499, 0.5534674445395399, -0.6680482688129638, -0.0731933118879036, 0.08951785522743155, 0.3878670791440863, -0.6084022424801906, -0.05423180624454739, 0.45901415098390647, -0.06649912621359656, 0.049161865740251026, -0.16512695953055748, -0.615857041800361, -0.18889016582480522, -0.06747854214940488, 0.039685061320914705, -0.280567580615816, 0.10056597116269038, 0.27946442736240906, 0.1436437726804933, 0.17008375356394662, 0.07055008396487601, 0.05728676287833826, -0.3134168019388634, 0.131897365225174, -0.10388860542938896, 1.1860560668556077, 0.3953619386902799, -0.04865845649792029, 0.10323284432586054, -0.5257019879313695, 0.7212172621157943, 0.25217165128216595, 0.25339060821290293, -0.5761312518105759, 0.3156046055399969, 0.23429895944604484, -0.25311582974024505, 0.03439257564023615, -0.13957973721075767, 0.10840428557793248, -0.2562080315860484, -0.16892903546574387, -0.050987382184971355, 0.027468989275016172, 0.35933014478383873, -1.085817745506718, -0.05073172944005877, 0.39422053707786725, 0.1677347076941106, 0.052938043596321274, -0.8251886646232688, 0.05016935753587611, 0.419958369014494, -0.47442506002199775, 0.30885505275053177, -0.316592789906638, -0.1014373055981501, -0.5955971393719532, 0.13416882750810463, 0.33191191518797236, 0.23198556281444185, 0.5140846307124354, 0.3169969592188669, 0.14481426687754198, 0.7230903430194339, 0.4050354553801552, 0.17539331529914512, -0.5715426824709912, 0.0567239177071985, -0.4996182939481031, 0.6345902296523218, -0.494975502839335, 0.2494631710319268, -0.05564602971530004, 0.388751529610312, 0.4452286039687492, 0.5309290644169973, 0.21946571009644494, -0.78092013598738, -0.02280381786742202, -0.1495232464119013, -0.23030946642928912, 0.6389909885908734, 0.16777798694665438, -0.2707043293532897, -0.31595694568213634, 0.151071025820802, -0.031103537900348054, -0.41501523710570976, 0.24279972576977302, 0.01303417251957482, 0.12051374348342736, -0.7815159946654112, 0.09731114292373688, -0.007896836420265323, 0.1045793017535484, 0.44818230619845645, -0.7591158237714037, 0.07894557593520224, 0.13490676228334145, -0.44486579519219527, 0.42375730080471924, 0.1696030859937709, 0.25499018130055295, -0.09632475430253383, 0.40443521225082835, 0.39395152387257765, -0.019184107785211547, 0.09534930289357244, 0.10033537922502148, -0.35733128274103815, -0.0764766183128314, 0.015194759075868916, 0.10706813030689899, 0.35712088880785303, -0.30791879400053157, 0.0377523914764218, 0.5145568904533734, -0.3478347460876909, -0.1906419777129334, -0.03989900117235649, 0.19478375808776843, 0.0704688386996821, 0.41872392559893423, 0.2904074451074611, 0.4741847202466561, 0.23313760373843254, 0.7312285107668746, 0.037384575856414845, -0.7099173249896071, 0.42440592823767415, -0.07337903540120229, 0.08166704412705157, 0.41236223189239996, -0.4592181122160022, -0.3187032205122721, -0.4685201510813224, -0.35496220137264395, -0.027757678076082145, 0.12587840233148453, 0.21445531803687531, -0.49177828805667323, -0.7211750622483466, 0.020682533592755393, -0.11409517521768212, 0.34186430192086215, 0.20696466565435723, -0.087449948229455, 0.1534349241129682, -0.034811001661959155, 0.40452035740236303, -0.12719176107586957, -0.027594405252715965, 0.05354867017458864, 0.23749456945651085, -0.1086038986440331, 0.22744122165834685, 0.030190866260391986, 0.050992227123757866, 0.4073017260456403, -0.8218941143435922, -0.3377710223789255, -0.5066536396273692, -0.7304266893249131, -0.29951172969278816, -0.00017408406372634513, -0.11523190140454725, 0.21480883650420457, 0.22664671801710654, 0.4894804733594493, -0.04360310997572807, 0.44962355952564625, -0.04960543743316833, -0.2422108965556783, -0.17162075530262216, -0.6331742401554442, -0.31242120294878634, -0.22610958687655208, 0.6158248421613493, 0.5501291162000299, -0.45793059837701755, 0.2612657853140763, -0.3111818396383121, 0.13958299115015055, -0.0656296661112925, -0.9095644780038722, 0.3507353033003081, 0.056392261542833166, -0.3658952119790217, -0.1032037240789893, -0.42275133160526657, 0.09811131017779263], b2: [-0.03862448346001323, -0.0018788645937906103, -0.11398512810733637, -0.7084892336165467, -0.018417716796601827, 0.09666366900785692, 0.004905575209676318, 0.15936463687677405, -0.22261748649557972, 0.07736812866891658],
+  W3: [-0.3076592236658735, -0.054339909719790774, 0.5065893105682494, 2.434484078701583, -0.17961653603131758, -1.2685231842530482, 1.3030353152631453, -0.7435238845910958, 1.1368126644430447, 0.9374065112593287], b3: [-0.48142874411313796],
+  meta: {
+  "dataset": "MIT-BIH Atrial Fibrillation Database (PhysioNet afdb 1.0.0): cardiologist-annotated beats from 25 AFib patients; 30 s windows; camera-jitter augmentation (\u00b13%); record-independent holdout (5 patients never seen in training)",
+  "source": "REAL PATIENT DATA \u2014 replaces preview synthetic model",
+  "n_windows_train": 93730,
+  "n_windows_val": 11858,
+  "n_patients": 25,
+  "val_patients": [
+    "06426",
+    "06995",
+    "08378",
+    "08434",
+    "08455"
+  ],
+  "architecture": "MLP 12-20-10-1 (tanh/tanh/sigmoid)",
+  "val_accuracy": 0.9719,
+  "val_sensitivity": 0.9948,
+  "val_specificity": 0.9515,
+  "val_precision": 0.9481,
+  "val_f1": 0.9709,
+  "note": "screening aid, not a diagnostic device"
+}
+};
+if (typeof module !== 'undefined') module.exports = NADI_MODEL;
+
+</script>
+<script>
+/*
+ * dsp.js — signal processing kernel for NadiSense
+ * -------------------------------------------------
+ * Pure-JS port of the DSP pipeline used to train the model
+ * (see tools/train_mlp.py). Every step here is mirrored 1:1 with the
+ * Python reference so the deployed features match training features.
+ *
+ * Pipeline: detrend -> zero-phase bandpass (FFT) -> systolic peak pick
+ * -> RR intervals -> 12 HRV / irregularity features.
+ *
+ * (Features used: HR, SDNN, RMSSD, pNN50, SD1, SD2, SD1/SD2, LF/HF,
+ *  spectral entropy, turning-point ratio, irregularity %, PVC-like
+ *  beats, sample entropy.)
+ */
+
+const DSP = (() => {
+  'use strict';
+
+  const FS = 30.0; // uniform samples per second after resampling
+
+  /* ------------------------- FFT (iterative radix-2) ------------------- */
+  function fft(re, im) {
+    const n = re.length;
+    if (n <= 1) return;
+    // bit-reversal permutation
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        const tr = re[i]; re[i] = re[j]; re[j] = tr;
+        const ti = im[i]; im[i] = im[j]; im[j] = ti;
+      }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = -2 * Math.PI / len;
+      const wr = Math.cos(ang), wi = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let k = 0; k < len / 2; k++) {
+          const ur = re[i + k], ui = im[i + k];
+          const vr = re[i + k + len / 2] * cr - im[i + k + len / 2] * ci;
+          const vi = re[i + k + len / 2] * ci + im[i + k + len / 2] * cr;
+          re[i + k] = ur + vr;           im[i + k] = ui + vi;
+          re[i + k + len / 2] = ur - vr; im[i + k + len / 2] = ui - vi;
+          const ncr = cr * wr - ci * wi, nci = cr * wi + ci * wr;
+          cr = ncr; ci = nci;
+        }
+      }
+    }
+  }
+
+  /* Inverse FFT via conjugation: x = (1/N) conj(FFT(conj(X))). */
+  function ifft(re, im) {
+    const n = re.length;
+    for (let i = 0; i < n; i++) im[i] = -im[i];
+    fft(re, im);
+    for (let i = 0; i < n; i++) { im[i] = -im[i]; re[i] /= n; im[i] /= n; }
+  }
+
+  function nextPow2(n) {
+    let m = 1;
+    while (m < n) m <<= 1;
+    return m;
+  }
+
+  /* Zero-phase bandpass via FFT with soft (raised-cosine) edges. */
+  function bandpass(x, lo, hi, fSample) {
+    const n = x.length;
+    const N = nextPow2(Math.max(n, 1));
+    const re = new Float64Array(N), im = new Float64Array(N);
+    re.set(x);
+    fft(re, im);
+    const loF = Math.max(lo, 1e-3), hiF = Math.min(hi, fSample / 2 - 1e-3);
+    const width = 0.20; // transition bands sit OUTSIDE the passband
+    for (let k = 0; k <= N / 2; k++) {
+      const f = k * fSample / N;
+      let m = (f >= loF && f <= hiF) ? 1 : 0;
+      if (f >= loF - width && f < loF) {
+        m = 0.5 * (1 - Math.cos(Math.PI * (f - (loF - width)) / width));
+      }
+      if (f > hiF && f <= hiF + width) {
+        m = 0.5 * (1 + Math.cos(Math.PI * (f - hiF) / width));
+      }
+      re[k] *= m; im[k] *= m;
+      if (k > 0 && k < N / 2) { re[N - k] *= m; im[N - k] *= m; }
+    }
+    const out = new Float64Array(n);
+    const full = new Float64Array(N);
+    full.set(Float64Array.from(re));
+    const fim = Float64Array.from(im);
+    ifft(full, fim);
+    for (let i = 0; i < n; i++) out[i] = full[i];
+    return out;
+  }
+
+  function detrend(x) {
+    const n = x.length;
+    let st = 0, stt = 0, sx = 0, sxt = 0;
+    for (let i = 0; i < n; i++) {
+      st += i; stt += i * i; sx += x[i]; sxt += x[i] * i;
+    }
+    const den = n * stt - st * st;
+    if (den === 0) return Float64Array.from(x);
+    const b = (n * sxt - st * sx) / den;
+    const a = (sx - b * st) / n;
+    const out = new Float64Array(n);
+    for (let i = 0; i < n; i++) out[i] = x[i] - (a + b * i);
+    return out;
+  }
+
+  /* Linear-interp resample of (times, values) onto a uniform grid. */
+  function resampleUniform(times, values, outLen, span) {
+    const out = new Float64Array(outLen);
+    let j = 1;
+    for (let i = 0; i < outLen; i++) {
+      const g = span * i / (outLen || 1);
+      while (j < times.length - 1 && times[j] < g) j++;
+      const t0 = times[j - 1], t1 = times[j];
+      const v0 = values[j - 1], v1 = values[j];
+      const d = Math.max(t1 - t0, 1e-9);
+      out[i] = v0 + (v1 - v0) * ((g - t0) / d);
+    }
+    return out;
+  }
+
+  /* Amplitude-ranked peak picker with a refractory window. */
+  function findPeaks(x, minDistSec, thrQuantile) {
+    const n = x.length;
+    const minSamp = Math.max(1, Math.floor(minDistSec * FS));
+    const cand = [];
+    for (let i = 1; i < n - 1; i++) {
+      if (x[i] >= x[i - 1] && x[i] > x[i + 1]) cand.push(i);
+    }
+    if (cand.length === 0) return [];
+    const amps = cand.map(i => x[i]);
+    const sorted = amps.slice().sort((a, b) => a - b);
+    const thr = sorted[Math.floor(thrQuantile / 100 * (sorted.length - 1))] * 0.6;
+    const order = cand.map((c, idx) => idx).sort((a, b) => amps[b] - amps[a]);
+    const kept = [];
+    for (const idx of order) {
+      const i = cand[idx];
+      if (amps[idx] < thr) break;
+      if (kept.every(k => Math.abs(k - i) >= minSamp)) kept.push(i);
+    }
+    kept.sort((a, b) => a - b);
+    return kept;
+  }
+
+  function rrFromPeaks(peaks) {
+    const rr = [];
+    for (let i = 1; i < peaks.length; i++) {
+      const v = (peaks[i] - peaks[i - 1]) / FS;
+      if (v >= 0.30 && v <= 1.60) rr.push(v);
+    }
+    return rr;
+  }
+
+  /*
+   * Adaptive-refractory peak detector (two passes). Pass 1 finds the
+   * strong systolic peaks; pass 2 re-runs with a refractory derived
+   * from the median RR, which drops dicrotic-notch second peaks.
+   * Mirrors tools/train_mlp.py::detect_peaks exactly.
+   */
+  function detectPeaks(x) {
+    let minDist = 0.30;
+    let pk = findPeaks(x, minDist, 55);
+    const rr = rrFromPeaks(pk);
+    if (rr.length >= 4) {
+      const med = rr.slice().sort((a, b) => a - b)[rr.length >> 1];
+      minDist = Math.max(0.35, Math.min(1.0, 0.65 * med));
+      pk = findPeaks(x, minDist, 55);
+    }
+    return pk;
+  }
+
+  function mean(a) { return a.reduce((s, v) => s + v, 0) / (a.length || 1); }
+  function std(a) {
+    if (a.length < 2) return 0;
+    const m = mean(a);
+    return Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / a.length);
+  }
+
+  /* Sample entropy (m=2, r = 0.2*SDNN) — same definition as the python side. */
+  function sampleEntropy(rr, m, r) {
+    const n = rr.length;
+    if (n < m + 2 || r <= 0) return 0;
+    function count(mm) {
+      let hits = 0, total = 0;
+      for (let i = 0; i <= n - mm; i++) {
+        for (let j = 0; j <= n - mm; j++) {
+          if (i === j) continue;
+          let d = 0;
+          for (let k = 0; k < mm; k++) d = Math.max(d, Math.abs(rr[i + k] - rr[j + k]));
+          if (d < r) hits++;
+          total++;
+        }
+      }
+      return hits / total;
+    }
+    const B = count(2) + 1e-12, A = count(3) + 1e-12;
+    return B > 1e-12 ? -Math.log(A / B) : 0;
+  }
+
+  /*
+   * Main feature extractor. Input: Float64Array of ~30 s raw PPG (uniform
+   * FS). Returns the 13-feature object, or null if the signal is unusable.
+   */
+  function features(raw) {
+    if (!raw || raw.length < 8 * FS) return null;
+    const det = detrend(raw);
+    const bp = bandpass(det, 0.6, 3.5, FS);
+    const peaks = detectPeaks(bp);
+    const rr = rrFromPeaks(peaks);
+    if (rr.length < 8) return null;
+
+    const hr = 60 / (rr.slice().sort((a, b) => a - b)[rr.length >> 1]);
+    const mrr = mean(rr);
+    const sdnn = std(rr) * 1000;
+    const drr = [];
+    for (let i = 1; i < rr.length; i++) drr.push((rr[i] - rr[i - 1]) * 1000);
+    const rmssd = Math.sqrt(mean(drr.map(d => d * d))) || 0;
+    const pnn50 = 100 * drr.filter(d => Math.abs(d) > 50).length / (drr.length || 1);
+
+    // Poincare (SD1/SD2 from adjacent-beat difference and sum series)
+    const n1 = rr.length - 1;
+    const diffs = [], sums = [];
+    for (let i = 0; i < n1; i++) { diffs.push(rr[i] - rr[i + 1]); sums.push(rr[i] + rr[i + 1]); }
+    const sdDiff = std(diffs), sdSum = std(sums);
+    const sd1 = sdDiff / Math.SQRT2 * 1000;
+    const sd2 = sdSum / Math.SQRT2 * 1000;
+    const sd1sd2 = sd2 > 1e-9 ? sd1 / sd2 : 0;
+
+    // tachogram -> LF/HF + spectral entropy (resample to 4 Hz)
+    const tm = [0];
+    for (let i = 1; i < rr.length; i++) tm.push(tm[i - 1] + rr[i]);
+    const span = tm[tm.length - 1];
+    const outLen = Math.max(16, Math.floor(span * 4));
+    const tach = resampleUniform(tm, rr, outLen, span);
+    const tm0 = mean(tach);
+    for (let i = 0; i < tach.length; i++) tach[i] -= tm0;
+    const N2 = Math.min(nextPow2(tach.length), 512);
+    const re = new Float64Array(N2), im = new Float64Array(N2);
+    re.set(tach.slice(0, N2));
+    fft(re, im);
+    const spec = [];
+    for (let k = 0; k <= N2 / 2; k++) spec.push(re[k] * re[k] + im[k] * im[k]);
+    let lf = 0, hf = 0, band = 0, totEnt = 0;
+    const bandStart = 0.04, bandEnd = 0.40;
+    for (let k = 0; k < spec.length; k++) {
+      const f = k * 4 / N2;
+      const v = spec[k];
+      if (f >= bandStart && f <= bandEnd) { band += v; totEnt++; }
+      if (f >= bandStart && f < 0.15) lf += v;
+      if (f >= 0.15 && f <= bandEnd) hf += v;
+    }
+    const lf_hf = hf > 1e-9 ? lf / hf : 0;
+    let pArr = [];
+    for (let k = 0; k < spec.length; k++) {
+      const f = k * 4 / N2;
+      if (f >= bandStart && f <= bandEnd && band > 0) pArr.push(spec[k] / band);
+    }
+    let s_ent = 0;
+    for (const p of pArr) {
+      if (p > 0) s_ent -= p * Math.log(p);
+    }
+    s_ent = pArr.length ? s_ent / Math.log(pArr.length) : 0;
+
+    // beat pattern irregularity
+    let turns = 0, tot = 0;
+    for (let i = 1; i + 1 < rr.length; i++) {
+      if ((rr[i] > rr[i - 1]) !== (rr[i] > rr[i + 1])) turns++;
+      tot++;
+    }
+    const turning = tot ? turns / tot : 0.5;
+    let absSum = 0;
+    for (const d of drr) absSum += Math.abs(d);
+    const irr = mrr > 0 ? (absSum / (drr.length || 1)) / mrr * 100 : 0;
+    const med = rr.slice().sort((a, b) => a - b)[rr.length >> 1];
+    let pvcCount = 0;
+    for (const v of rr) if (Math.abs(v - med) / med > 0.22) pvcCount++;
+    const pvc = pvcCount / rr.length;
+    const sampen = sampleEntropy(rr, 2, 0.2 * (sdnn / 1000));
+
+    return {
+      hrMean: hr, sdnn, rmssd, pnn50, sd1, sd2, sd1sd2,
+      lf_hf, s_ent, turning, irr, pvc, sampen,
+      n_beats: rr.length,
+      // extras for the UI / guards
+      peaks, rr, bp, det
+    };
+  }
+
+  /*
+   * Signal-quality index in [0,1] — blend of spectral band ratio and
+   * beat-interval regularity. A fingertip with motion artifact gives a
+   * low band ratio; a clean but tremorous hold gives irregular RRs; both
+   * pull the index down and trigger the "retake" guardrail.
+   */
+  function qualityIndex(bp, det, rr) {
+    if (!bp || !det || det.length < 32) return 0;
+    const vDet = std(det), vBp = std(bp);
+    // contrast: pulse-band (0.6-3.5 Hz) power vs out-of-band power
+    // (baseline wander, tremor, broadband noise) -- logistic-scaled
+    const br2 = vBp * vBp / Math.max(vDet * vDet - vBp * vBp, 1e-12);
+    const bandRatio = br2 / (br2 + 0.7);
+    let reg = 0;
+    if (rr && rr.length >= 4) {
+      const med = rr.slice().sort((a, b) => a - b)[rr.length >> 1];
+      let inBand = 0;
+      for (const v of rr) if (v >= 0.75 * med && v <= 1.35 * med) inBand++;
+      reg = inBand / rr.length;
+    }
+    return Math.max(0, Math.min(1, 0.6 * bandRatio + 0.4 * reg));
+  }
+
+  return { FS, features, findPeaks, detectPeaks, bandpass, detrend, resampleUniform,
+           qualityIndex, fft, nextPow2, mean, std };
+})();
+
+if (typeof module !== 'undefined') module.exports = DSP;
+
+</script>
+<script>
+/*
+ * classifier.js — on-device inference + care-level logic
+ * -------------------------------------------------------
+ * Feeds the 13 DSP features through the tiny MLP exported by
+ * tools/train_mlp.py (js/model_weights.js), then maps the probability
+ * to a care level with rule-based guardrails (signal quality, heart
+ * rate range, beat count). Kept deliberately small so it runs on a
+ * ₹6,000 Android phone during the zonal/final demos.
+ */
+
+const Classifier = (() => {
+  'use strict';
+
+  const M = (typeof NADI_MODEL !== 'undefined') ? NADI_MODEL : null;
+  const FEATURES = M ? M.features : [];
+  const M2F = FEATURES.length;
+
+  function stdize(feat) {
+    const x = new Float64Array(FEATURES.length);
+    for (let i = 0; i < FEATURES.length; i++) {
+      const z = (feat[FEATURES[i]] - M.mean[i]) / M.scale[i];
+      x[i] = Math.max(-3, Math.min(3, z));   // winsorise (matches training)
+    }
+    return x;
+  }
+
+  /* Forward pass: 13 -> 20 -> 10 -> 1 (tanh/tanh/sigmoid). */
+  function forward(x) {
+    const a1 = new Float64Array(20), a2 = new Float64Array(10);
+    for (let j = 0; j < 20; j++) {
+      let s = M.b1[j];
+      for (let i = 0; i < M2F; i++) s += x[i] * M.W1[j * M2F + i];
+      a1[j] = Math.tanh(s);
+    }
+    for (let j = 0; j < 10; j++) {
+      let s = M.b2[j];
+      for (let i = 0; i < 20; i++) s += a1[i] * M.W2[j * 20 + i];
+      a2[j] = Math.tanh(s);
+    }
+    let s = M.b3[0];
+    for (let i = 0; i < 10; i++) s += a2[i] * M.W3[i];
+    return 1 / (1 + Math.exp(-s));
+  }
+
+  /*
+   * feat: object from DSP.features()
+   * Returns { p, level, warnings[], hr, notes[] }
+   * level: 'low' | 'mid' | 'high'
+   */
+  function assess(feat, quality) {
+    const warnings = [], notes = [];
+
+    if (!feat || feat.n_beats < 8) {
+      return { p: null, level: 'error', warnings: ['WARN_FEW_BEATS'], hr: null, notes: [] };
+    }
+
+    const p = M ? forward(stdize(feat)) : 0.5;
+
+    // ---- guardrails -------------------------------------------------
+    if (feat.hrMean < 40 || feat.hrMean > 180) warnings.push('WARN_HR_RANGE');
+    if (feat.n_beats < 12) warnings.push('WARN_SHORT');
+    if (quality !== null && quality < 0.6) warnings.push('WARN_QUALITY');
+    if (feat.pvc > 0.18) notes.push('NOTE_ECTOPIC');
+
+    let level;
+    if (p < 0.35) level = 'low';
+    else if (p < 0.65) level = 'mid';
+    else level = 'high';
+
+    if (feat.sdnn < 30 && p < 0.35) notes.push('NOTE_LOW_HRV');
+
+    return { p, level, warnings, hr: feat.hrMean, notes: notes.concat(warnings) };
+  }
+
+  return { assess, stdize, forward, FEATURES };
+})();
+
+if (typeof module !== 'undefined') module.exports = Classifier;
+
+</script>
+<script>
+/*
+ * simulator.js — SYNTHETIC pulse-signal generator (demo/test mode only)
+ * ---------------------------------------------------------------------
+ * Generates a 30 s photoplethysmogram-like waveform with physiological
+ * beat dynamics. It exists so the pipeline can be demonstrated on any
+ * laptop (judges' rooms rarely have a finger + camera setup), and so
+ * the automated tests (tests/run_tests.mjs) have a ground truth.
+ *
+ * IMPORTANT: this is a *test fixture*, not product functionality. The
+ * shipped capture path is the phone camera (ppgcamera.js). The signal
+ * flows through the exact same DSP + classifier as real capture.
+ */
+
+const Simulator = (() => {
+  'use strict';
+  const FS = 30;
+
+  // one-beat template: systolic peak, dicrotic notch, ~0.9 s
+  const TPL = (() => {
+    const n = Math.floor(0.75 * FS), tpl = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      const t = i / FS;
+      tpl[i] = 0.9 * Math.exp(-0.5 * Math.pow((t - 0.22) / 0.055, 2))
+             + 0.35 * Math.exp(-0.5 * Math.pow((t - 0.50) / 0.070, 2))
+             + 0.08 * Math.exp(-0.5 * Math.pow((t - 0.62) / 0.045, 2));
+    }
+    const mx = Math.max(...tpl);
+    return tpl.map(v => v / mx);
+  })();
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = (a + 0x6D2B79F5) | 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  const SCENARIOS = {
+    normal:  { label: 'Normal sinus rhythm', hr: 72, sdnn: 46, rho: 0.35, af: false, noise: 0.012 },
+    lowhrv:  { label: 'Low HRV (stressed / risk)', hr: 86, sdnn: 21, rho: 0.30, af: false, noise: 0.013 },
+    afib:    { label: 'Atrial fibrillation-like', hr: 97, sdnn: 158, rho: 0.05, af: true, noise: 0.012 },
+    noisy:   { label: 'With motion artifact', hr: 76, sdnn: 52, rho: 0.30, af: false, noise: 0.070 },
+    weak:    { label: 'Weak/flat signal', hr: 70, sdnn: 44, rho: 0.35, af: false, noise: 0.040, gain: 0.18 },
+    motion:  { label: 'Heavy motion (cannot hold still)', hr: 74, sdnn: 55, rho: 0.30, af: false, noise: 0.120, gain: 0.5, wander: 0.55 },
+  };
+
+  function genRR(cfg, rng, n) {
+    const base = 60 / cfg.hr;
+    const rr = new Float64Array(n);
+    const raw = new Float64Array(n);
+    for (let i = 0; i < n; i++) raw[i] = (rng() * 2 - 1) * 0.9 + (rng() * 2 - 1) * 0.9;
+    if (!cfg.af) {
+      for (let i = 0; i < n; i++) {
+        const phase = 2 * Math.PI * (0.18 + 0.1 * rng()) * i / (base * 18);
+        rr[i] = base * (1 + 0.022 * Math.sin(phase)) + raw[i];
+      }
+      const m = rr.reduce((s, v) => s + v, 0) / n;
+      const d = [], out = new Float64Array(n);
+      for (let i = 0; i < n; i++) d.push(rr[i] - m);
+      out[0] = d[0];
+      for (let i = 1; i < n; i++) out[i] = cfg.rho * out[i - 1] + d[i];
+      for (let i = 0; i < n; i++) rr[i] = m + out[i] * (0.55 + 0.45 * rng());
+    } else {
+      for (let i = 0; i < n; i++) rr[i] = base + 0.55 * raw[i] * 0.9;
+      for (let i = 0; i < n; i++) if (rng() < 0.08) rr[i] += (rng() * 2 - 1) * 0.9 * base;
+    }
+    // rescale sdnn to target (ms), then recentre the finite-sample mean
+    // on the target rate (the AR(1) pass drifts it otherwise)
+    let m = rr.reduce((s, v) => s + v, 0) / n;
+    let sd = Math.sqrt(rr.reduce((s, v) => s + (v - m) * (v - m), 0) / n) || 1e-9;
+    for (let i = 0; i < n; i++) rr[i] = m + (rr[i] - m) * (cfg.sdnn / 1000 / sd);
+    m = rr.reduce((s, v) => s + v, 0) / n;
+    for (let i = 0; i < n; i++) rr[i] = base + (rr[i] - m);
+    for (let i = 0; i < n; i++) rr[i] = Math.max(0.30, Math.min(1.45, rr[i]));
+    return rr;
+  }
+
+  /*
+   * Generate the full 30 s waveform.
+   * kind: one of the SCENARIOS keys. Returns { signal: Float64Array, fs }.
+   */
+  function generate(kind = 'normal', seed = 7) {
+    const cfg = SCENARIOS[kind] || SCENARIOS.normal;
+    const rng = mulberry32(seed * 2654435761 ^ 0x9e3779b9);
+    const n = Math.floor(30 * FS);
+    const sig = new Float64Array(n);
+    const rr = genRR(cfg, rng, 140);
+    const tm = [0];
+    for (let i = 1; i < rr.length; i++) tm.push(tm[i - 1] + rr[i]);
+    for (const t0 of tm) {
+      const i0 = Math.floor(t0 * FS);
+      for (let k = 0; k < TPL.length && i0 + k < n; k++) {
+        sig[i0 + k] += TPL[k] * (0.9 + 0.1 * rng());
+      }
+    }
+    const gain = cfg.gain || 1.0;
+    for (let i = 0; i < n; i++) {
+      const t = i / FS;
+      const wander = 0.035 * Math.sin(2 * Math.PI * 0.14 * t + rng() * 6)
+                   + (cfg.wander || 0.16) * Math.sin(2 * Math.PI * 0.30 * t + rng() * 6);
+      const tremor = 0.02 * Math.sin(2 * Math.PI * 9 * t + rng() * 6)
+                   * (0.5 + 0.5 * Math.sin(2 * Math.PI * 0.11 * t));
+      sig[i] = sig[i] * gain + wander + tremor + (rng() * 2 - 1) * cfg.noise;
+    }
+    return { signal: sig, fs: FS, kind, label: cfg.label };
+  }
+
+  return { generate, SCENARIOS, FS };
+})();
+
+if (typeof module !== 'undefined') module.exports = Simulator;
+
+</script>
+<script>
+/*
+ * ppgcamera.js — fingertip camera PPG capture
+ * --------------------------------------------
+ * Uses the phone's camera as a reflectance photoplethysmograph: the
+ * green channel of a small ROI (fingertip) tracks blood volume changes
+ * with each beat. Frames are averaged down to ~30 Hz and timestamped.
+ *
+ * Why green? Haemoglobin absorbs green light strongly, so green-channel
+ * pulsatility is the highest-contrast proxy for the pulse waveform.
+ *
+ * Design constraint honoured: NO image data ever leaves the device.
+ * All processing is the mean of an NxN ROI per frame - nothing is
+ * stored, nothing is uploaded.
+ */
+
+const PpgCamera = (() => {
+  'use strict';
+
+  class Source {
+    constructor() {
+      this.queue = [];        // {t, v}
+      this.started = 0;
+      this.stream = null;
+      this.video = null;
+      this.raf = 0;
+    }
+
+    // Try progressively simpler constraints so exotic devices / in-app
+    // webviews that can't satisfy {facingMode,width,height} still work.
+    // Any non-constraint error (blocked, busy, no camera…) is rethrown as-is
+    // — the caller needs the real name to explain the fix to the user.
+    async getStream() {
+      const attempts = [
+        { video: { facingMode: 'environment', width: { ideal: 640 }, height: { ideal: 480 } }, audio: false },
+        { video: { facingMode: 'environment' }, audio: false },
+        { video: true, audio: false },
+      ];
+      let last = null;
+      for (const c of attempts) {
+        try { return await navigator.mediaDevices.getUserMedia(c); }
+        catch (e) {
+          last = e;
+          if (e.name !== 'OverconstrainedError' && e.name !== 'ConstraintNotSatisfiedError') throw e;
+        }
+      }
+      throw last || new Error('camera constraints failed');
+    }
+
+    async start(videoEl, roiSize = 48) {     // 48x48 px: ≈4× more photons than 24 → cleaner pulse
+      this.stream = await this.getStream();
+      this.video = videoEl;
+      this.video.srcObject = this.stream;
+      await this.video.play();
+      this.started = performance.now();
+
+      // Fingertip PPG needs transmitted light: turn the torch ON if the
+      // hardware supports it (Chrome/Android). Without it the red glow is
+      // too weak and the capture correctly fails the quality gate.
+      this.track = this.stream.getVideoTracks()[0] || null;
+      this.torch = false;
+      if (this.track) {
+        try {
+          const caps = this.track.getCapabilities ? this.track.getCapabilities() : {};
+          if (caps && caps.torch) {
+            await this.track.applyConstraints({ advanced: [{ torch: true }] });
+            this.torch = true;
+          }
+        } catch (e) { /* torch unsupported or user-blocked — continue */ }
+      }
+
+      // draw loop: read ROI from the live frame, push green-channel mean.
+      // Throttle by wall clock (not video.currentTime — that does not
+      // advance on some desktop/UX stacks, which starved the queue and
+      // crashed read()).
+      const ctx = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+      const cw = roiSize, ch = roiSize;
+      ctx.canvas.width = cw; ctx.canvas.height = ch;
+
+      let lastPushMs = 0;
+      const tick = () => {
+        if (!this.stream) return;
+        const nowMs = performance.now();
+        if (nowMs - lastPushMs >= 1000 / 30) {   // ~30 Hz sampling
+          lastPushMs = nowMs;
+          try {
+            const w = this.video.videoWidth, h = this.video.videoHeight;
+            if (w > 0 && h > 0 && this.video.readyState >= 2) { // HAVE_CURRENT_DATA
+              const cx = w / 2, cy = h / 2;
+              ctx.drawImage(this.video,
+                cx - cw / 2, cy - ch / 2, cw, ch, 0, 0, cw, ch);
+              const d = ctx.getImageData(0, 0, cw, ch).data;
+              // capture ALL channels: with the flash pressed behind the
+              // fingertip, GREEN often saturates (clips to 255 = flat);
+              // transmissive-mode pulsatility then only survives in RED.
+              // The consumer picks the usable channel per window.
+              let r = 0, g = 0, b = 0;
+              for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; }
+              const npx = d.length / 4;
+              const rM = r / npx, gM = g / npx, bM = b / npx;
+              this.queue.push({
+                t: (nowMs - this.started) / 1000,
+                v: gM,            // legacy field = green mean (tests & old readers)
+                r: rM, g: gM, b: bM,
+              });
+            }
+          } catch (e) { /* frame not ready yet — skip */ }
+        }
+        this.raf = requestAnimationFrame(tick);
+      };
+      this.raf = requestAnimationFrame(tick);
+    }
+
+    /* Uniform 30 Hz right-edge window of whatever we've collected.
+       * Safe on an empty queue: returns zeros (flat signal) so the DSP
+       * layer can report "poor/insufficient signal" instead of crashing. */
+    read(secs) {
+      const q = this.queue;
+      const n = Math.max(2, Math.floor(secs * 30));
+      if (!q.length) return new Float64Array(n);      // no frames yet → flat
+      const tEnd = q[q.length - 1].t;
+      const tStart = Math.max(0, tEnd - secs);
+      const out = new Float64Array(n);
+      let j = 0;
+      for (let i = 0; i < out.length; i++) {
+        const g = tStart + secs * i / out.length;
+        while (j < q.length - 1 && q[j].t < g) j++;
+        const a = q[Math.max(0, j - 1)], b = q[Math.min(q.length - 1, j)];
+        const d = Math.max(b.t - a.t, 1e-9);
+        out[i] = a.v + (b.v - a.v) * ((g - a.t) / d);
+      }
+      return out;
+    }
+
+    async _tryTorch() {
+      if (!this.track) return false;
+      try {
+        const caps = this.track.getCapabilities ? this.track.getCapabilities() : {};
+        if (!caps || !caps.torch) return false;
+        await this.track.applyConstraints({ advanced: [{ torch: true }] });
+        const st = this.track.getSettings ? this.track.getSettings() : {};
+        return st.torch !== false;   // some browsers don't echo the setting
+      } catch (e) { return false; }
+    }
+
+    stop() {
+      cancelAnimationFrame(this.raf);
+      if (this.stream) {
+        this.stream.getTracks().forEach(t => t.stop());
+        this.stream = null;
+      }
+      if (this.video) this.video.srcObject = null;
+    }
+  }
+
+  return { Source };
+})();
+
+if (typeof module !== 'undefined') module.exports = PpgCamera;
+
+</script>
+<script>
+/*
+ * i18n.js — UI strings (English / हिन्दी / தமிழ்)
+ * --------------------------------------------------------------
+ * Translations are short clinical prompts suitable for an ASHA
+ * worker's phone. Labels with a `data-i18n` attribute in index.html
+ * are swapped on language change; dynamic strings go through t().
+ */
+
+const I18N = (() => {
+  const STR = {
+    en: {
+      appName: 'NadiSense',
+      tagline: 'On-device AI cardiac rhythm screening',
+      offline: 'offline-first · no data leaves the phone',
+      langLabel: 'भाषा',
+      // onboarding
+      heroTitle: 'A 60-second heart check, no hardware, no internet.',
+      heroSub: 'NadiSense turns any smartphone camera into a pulse monitor. Built for ASHA workers and PHCs in rural India — screen for irregular rhythm (AFib-like patterns) at the doorstep.',
+      start: 'Start Screening',
+      demo: 'Demo Mode (synthetic signal)',
+      howTitle: 'How it works',
+      how1t: '1 · Place fingertip on camera',
+      how1d: 'Front or rear camera, covered by the fingertip. Green channel = blood volume.',
+      how2t: '2 · Wait 60 seconds',
+      how2d: 'We capture the pulse waveform, clean motion artifacts, find every beat.',
+      how3t: '3 · On-device AI screens',
+      how3d: '12 HRV features → tiny neural net (12→20→10→1). Runs offline in under a second.',
+      how4t: '4 · Get a care level',
+      how4d: 'Green — routine. Amber — repeat in 2 weeks. Red — refer for an ECG.',
+      privacy: 'Privacy: no image, video or signal is stored or uploaded. Processing happens on this phone.',
+      methodTitle: 'Method & limits',
+      methodBody: 'NadiSense computes pulse-transit dynamics from fingertip video (reflectance PPG) and derives 12 heart-rate-variability features (SDNN, RMSSD, pNN50, SD1/SD2, LF/HF, spectral entropy, turning-point ratio, ectopy-like beat fraction, irregularity %, heart rate). A 3-layer network trained on HRV patterns returns P(irregular rhythm). This is a SCREENING aid, not a diagnosis — irregularity has many causes (stress, caffeine, ectopic beats), and a negative result does not rule out heart disease.',
+      // capture
+      captureTitle: 'Cover the camera with your fingertip',
+      captureSub: 'Fingertip flat over the rear camera AND flash. Press gently (not hard), sit still, breathe normally.',
+      camBtn: 'Open Camera',
+      usingCam: 'Live camera feed',
+      usingSim: 'Synthetic demo signal (test fixture)',
+      quality: 'signal quality',
+      hold: 'Hold still…',
+      liveBeats: 'beats',
+      torchOn: 'flash ON',
+      torchOff: 'flash off — brighten room or press harder over lens+flash',
+      torchWait: 'starting flash…',
+      coachFlash: 'Weak signal — cover BOTH the rear lens and the flash, press GENTLY, brighten the room',
+      liveHr: 'live HR',
+      stop: 'Finish early',
+      captureAgain: 'Recapture',
+      simNote: 'Demo mode feeds a simulated pulse waveform through the same DSP + classifier used for camera capture.',
+      camDenied: 'Camera unavailable (denied or not permitted in this browser). Try Demo Mode — it exercises the identical pipeline.',
+      camFallback: 'Camera not available here — continuing with the synthetic Demo signal (identical pipeline)',
+      // camera error panel (reasoned per failure type)
+      camErrBlockedT: 'Camera is blocked for this site',
+      camErrBlockedB: 'The camera was blocked earlier for this site. Fix: tap the lock / info icon at the left of the address bar → Site settings → Camera → Allow, then press Retry. Once allowed, NadiSense works in NORMAL tabs too — incognito is not needed.',
+      camErrBusyT: 'Camera is busy',
+      camErrBusyB: 'Another app or browser tab is using the camera right now. Close it completely, then press Retry.',
+      camErrNoCamT: 'No camera found',
+      camErrNoCamB: 'This device reports no working camera. Try another phone, or use Demo Mode to see the identical pipeline.',
+      camErrSecureT: 'Camera needs the secure link',
+      camErrSecureB: 'Browsers allow the camera only on https:// pages. Open the secure link: https://nadisense.vercel.app — Demo Mode also runs here.',
+      camErrGenT: 'Camera could not start',
+      camErrGenB: 'Something interrupted the camera. Press Retry — if it keeps failing, use Demo Mode (identical pipeline).',
+      camRetry: 'Retry camera',
+      camUseDemo: 'Use Demo Mode instead',
+      // analyzing
+      analyzing: 'Analyzing on-device…',
+      stQuality: 'Signal quality check',
+      stBeats: 'Peak detection (beat finding)',
+      stFeatures: '12 HRV features',
+      stClassify: 'Neural net inference',
+      stDone: 'Done',
+      // results
+      resultTitle: 'Screening result',
+      pLabel: 'P(irregular rhythm)',
+      beats: 'beats',
+      duration: '30 s window',
+      levelLow: 'Rhythm looks regular',
+      levelLowD: 'No irregularity pattern flagged. Routine screening: repeat every 6 months, or sooner if symptoms appear.',
+      levelMid: 'Inconclusive — needs a repeat',
+      levelMidD: 'Some irregularity but not conclusive. Repeat the test in 2 weeks at a fixed time; if symptoms, palpitations or breathlessness are present, refer for an ECG.',
+      levelHigh: 'Irregular rhythm pattern detected',
+      levelHighD: 'The beat pattern matches irregular-rhythm signatures. This is NOT a diagnosis — refer to the PHC/CHC for a 12-lead ECG within 7 days and share this report.',
+      errTitle: 'Could not read the pulse',
+      errD: 'Not enough clean beats in the window. ',
+      errCamTips: 'Common fixes: ① Use a phone — cover BOTH the rear camera and flashlight with your fingertip, flash ON. ② Desktop webcams have no flash → the signal is usually too flat; use your phone or Demo Mode. ③ Keep still, press gently — do not squash the finger. ④ Brighten the room.',
+      errSimTips: 'The demo signal was too disturbed — try the "Normal sinus" or "Atrial fibrillation-like" scenario with a different seed.',
+      errDemo: 'Try Demo Mode instead',
+      retake: 'Retake test',
+      metrics: 'HRV metrics',
+      report: 'Screening report',
+      reportAsk: 'Patient / person name (optional)',
+      saveReport: 'Print / download report',
+      copySummary: 'Copy summary',
+      newTest: 'New test',
+      logbook: 'Recent tests (this phone only)',
+      clearLog: 'clear',
+      disclaimer: 'NadiSense is a screening aid, not a medical device. It does not diagnose any condition. Always confirm with a qualified clinician and a standard ECG.',
+      // questionnaire
+      qTitle: '2 quick questions (voice or type)',
+      q1: 'Any history of heart disease, BP or diabetes?',
+      q2: 'Symptoms now: chest pain, palpitations, breathlessness?',
+      qYes: 'Yes', qNo: 'No', qNone: 'none',
+      qAnswered: 'answers recorded in the report',
+      qSkip: 'Skip (recommended if filling solo)',
+      askLater: 'Ask via voice',
+      voiceUnsupported: 'Voice input not supported in this browser — type instead.',
+      listening: 'Listening… say "yes" or "no"',
+      // misc
+      footNote: 'Agent Matrix · TECHNOVA 2026 · TSM, Madurai',
+      seedLabel: 'simulation seed',
+    },
+
+    hi: {
+      appName: 'नाड़ीसेंस',
+      tagline: 'ऑन-डिवाइस AI हृदय ताल जांच',
+      offline: 'ऑफ़लाइन · डेटा फोन से बाहर नहीं जाता',
+      langLabel: 'भाषा',
+      heroTitle: '60 सेकंड की दिल की जांच — बिना हार्डवेयर, बिना इंटरनेट।',
+      heroSub: 'नाड़ीसेंस किसी भी स्मार्टफोन के कैमरे को नाड़ी मॉनिटर बना देता है। ग्रामीण भारत की आशा वर्कर और PHC के लिए — दरवाज़े पर ही अनियमित हृदय ताल की जांच।',
+      start: 'जांच शुरू करें',
+      demo: 'डेमो मोड (सिंथेटिक सिग्नल)',
+      howTitle: 'कैसे काम करता है',
+      how1t: '1 · उंगली कैमरे पर रखें',
+      how1d: 'आगे या पीछे का कैमरा, उंगली से ढकें। हरा चैनल = रक्त की मात्रा।',
+      how2t: '2 · 60 सेकंड रुकें',
+      how2d: 'हम नाड़ी तरंग लेते हैं, हलचल हटाते हैं, हर धड़कन खोजते हैं।',
+      how3t: '3 · ऑन-डिवाइस AI जांच',
+      how3d: '12 HRV फीचर → छोटा न्यूरल नेट (12→20→10→1)। ऑफ़लाइन, एक सेकंड से कम।',
+      how4t: '4 · देखभाल स्तर पाएं',
+      how4d: 'हरा — सामान्य। पीला — 2 हफ्ते में फिर जांच। लाल — ECG के लिए रेफर।',
+      privacy: 'गोपनीयता: कोई इमेज, वीडियो या सिग्नल स्टोर या अपलोड नहीं होता। प्रोसेसिंग इसी फोन पर होती है।',
+      methodTitle: 'विधि और सीमाएं',
+      methodBody: 'नाड़ीसेंस उंगली के वीडियो (रिफ्लेक्टेंस PPG) से नाड़ी गतिकी निकालता है और 12 HRV फीचर (SDNN, RMSSD, pNN50, SD1/SD2, LF/HF, सैंपल एंट्रॉपी, टर्निंग-पॉइंट, एक्टॉपी अंश, स्पेक्ट्रल एंट्रॉपी, अनियमितता %) बनाता है। 3-परत नेटवर्क P(अनियमित ताल) देता है। यह जांच सहायक है, निदान नहीं।',
+      captureTitle: 'उंगली से कैमरा ढकें',
+      captureSub: 'पिछले कैमरे और फ्लैश दोनों पर उंगली रखें। हल्का दबाएं, स्थिर बैठें, सामान्य सांस लें।',
+      camBtn: 'कैमरा खोलें',
+      usingCam: 'लाइव कैमरा फीड',
+      usingSim: 'सिंथेटिक डेमो सिग्नल (टेस्ट फिक्स्चर)',
+      quality: 'सिग्नल गुणवत्ता',
+      hold: 'स्थिर रहें…',
+      liveBeats: 'धड़कनें',
+      torchOn: 'फ्लैश ON',
+      torchOff: 'फ्लैश बंद — रोशनी बढ़ाएं या लेंस+फ्लैश पर हल्का दबाव',
+      torchWait: 'फ्लैश शुरू हो रही…',
+      coachFlash: 'कमज़ोर सिग्नल — पिछले लेंस और फ्लैश दोनों ढकें, हल्का दबाएं, रोशनी बढ़ाएं',
+      liveHr: 'लाइव HR',
+      stop: 'जल्दी खत्म करें',
+      captureAgain: 'फिर से लें',
+      simNote: 'डेमो मोड वही DSP + क्लासिफायर पाइपलाइन चलाता है जो कैमरे के लिए है।',
+      camDenied: 'कैमरा उपलब्ध नहीं। डेमो मोड आज़माएं — वही पाइपलाइन चलती है।',
+      camFallback: 'यहाँ कैमरा उपलब्ध नहीं — सिंथेटिक डेमो सिग्नल से जारी (वही पाइपलाइन)',
+      camErrBlockedT: 'इस साइट के लिए कैमरा ब्लॉक है',
+      camErrBlockedB: 'कैमरा पहले इस साइट के लिए ब्लॉक कर दिया गया था। ठीक करने के लिए: एड्रेस बार के बाईं ओर लॉक / info आइकन दबाएं → Site settings → Camera → Allow, फिर "दोबारा कोशिश करें" दबाएं। इजाज़त मिलते ही यह सामान्य टैब में भी चलेगा — incognito की ज़रूरत नहीं।',
+      camErrBusyT: 'कैमरा कहीं और उपयोग में है',
+      camErrBusyB: 'कोई अन्य ऐप या ब्राउज़र टैब अभी कैमरा इस्तेमाल कर रहा है। उसे पूरी तरह बंद करें, फिर "दोबारा कोशिश करें" दबाएं।',
+      camErrNoCamT: 'कैमरा नहीं मिला',
+      camErrNoCamB: 'इस डिवाइस में कोई कैमरा उपलब्ध नहीं है। दूसरा फ़ोन आज़माएं, या डेमो मोड से वही पूरी पाइपलाइन देखें।',
+      camErrSecureT: 'कैमरे के लिए सुरक्षित लिंक चाहिए',
+      camErrSecureB: 'ब्राउज़र कैमरा सिर्फ https:// पेजों पर अनुमति देते हैं। सुरक्षित लिंक खोलें: https://nadisense.vercel.app — डेमो मोड यहीं भी चलता है।',
+      camErrGenT: 'कैमरा शुरू नहीं हो सका',
+      camErrGenB: 'कैमरा शुरू करते समय समस्या आई। "दोबारा कोशिश करें" दबाएं — बार-बार फेल हो तो डेमो मोड (वही पाइपलाइन) इस्तेमाल करें।',
+      camRetry: 'कैमरा दोबारा कोशिश करें',
+      camUseDemo: 'डेमो मोड इस्तेमाल करें',
+      analyzing: 'डिवाइस पर विश्लेषण…',
+      stQuality: 'सिग्नल गुणवत्ता जांच',
+      stBeats: 'धड़कन खोज (पीक डिटेक्शन)',
+      stFeatures: '12 HRV फीचर',
+      stClassify: 'न्यूरल नेट अनुमान',
+      stDone: 'पूर्ण',
+      resultTitle: 'जांच परिणाम',
+      pLabel: 'P(अनियमित ताल)',
+      beats: 'धड़कनें',
+      duration: '30 सेकंड विंडो',
+      levelLow: 'ताल नियमित दिखता है',
+      levelLowD: 'कोई अनियमितता नहीं मिली। नियमित जांच: हर 6 महीने, या लक्षण दिखने पर जल्दी।',
+      levelMid: 'अनिर्णीत — दोबारा जांच',
+      levelMidD: 'कुछ अनियमितता है पर पक्की नहीं। 2 हफ्ते में फिर जांचें; धड़कन तेज या सांस फूलने पर ECG कराएं।',
+      levelHigh: 'अनियमित ताल का पैटर्न मिला',
+      levelHighD: 'धड़कन का पैटर्न अनियमित ताल जैसा है। यह निदान नहीं — 7 दिन में PHC/CHC में 12-लीड ECG कराएं, यह रिपोर्ट साथ ले जाएं।',
+      errTitle: 'नाड़ी नहीं पढ़ी जा सकी',
+      errD: 'पर्याप्त साफ धड़कनें नहीं मिलीं।',
+      errCamTips: 'सुधार: ① फोन इस्तेमाल करें — उंगली से पिछला कैमरा और फ्लैश लाइट दोनों ढकें, फ्लैश ON रखें। ② डेस्कटॉप वेबकैम में फ्लैश नहीं होता (सिग्नल सपाट रहता है) — फोन या डेमो मोड इस्तेमाल करें। ③ स्थिर बैठें, हल्का दबाएं। ④ कमरे की रोशनी बढ़ाएं।',
+      errSimTips: 'डेमो सिग्नल बहुत विक्षुब्ध था — दूसरे सीड के साथ "सामान्य" या "अफिब-जैसा" परिदृश्य आज़माएं।',
+      errDemo: 'इसके बजाय डेमो मोड आज़माएं',
+      retake: 'दोबारा जांच',
+      metrics: 'HRV मेट्रिक्स',
+      report: 'जांच रिपोर्ट',
+      reportAsk: 'मरीज़ का नाम (वैकल्पिक)',
+      saveReport: 'रिपोर्ट प्रिंट / डाउनलोड',
+      copySummary: 'सारांश कॉपी करें',
+      newTest: 'नई जांच',
+      logbook: 'हाल की जांच (सिर्फ इसी फोन पर)',
+      clearLog: 'हटाएं',
+      disclaimer: 'नाड़ीसेंस जांच सहायक है, चिकित्सा उपकरण नहीं। किसी भी बीमारी का निदान नहीं करता। पुष्टि हमेशा डॉक्टर और मानक ECG से कराएं।',
+      qTitle: '2 छोटे सवाल (आवाज़ या टाइप)',
+      q1: 'दिल की बीमारी, BP या मधुमेह का इतिहास?',
+      q2: 'अभी लक्षण: सीने में दर्द, धड़कन, सांस फूलना?',
+      qYes: 'हां', qNo: 'नहीं', qNone: 'कोई नहीं',
+      qAnswered: 'उत्तर रिपोर्ट में दर्ज होंगे',
+      qSkip: 'छोड़ें (सुझावित)',
+      askLater: 'आवाज़ से पूछें',
+      voiceUnsupported: 'इस ब्राउज़र में आवाज़ इनपुट नहीं है — टाइप करें।',
+      listening: 'सुन रहा हूं… "हां" या "नहीं" बोलें',
+      footNote: 'Agent Matrix · TECHNOVA 2026 · TSM, मदुरै',
+      seedLabel: 'सिमुलेशन सीड',
+    },
+
+    ta: {
+      appName: 'நாடிசென்ஸ்',
+      tagline: 'சாதனத்திலேயே AI இதயத் தாள பரிசோதனை',
+      offline: 'ஆஃப்லைன் · தரவு போனை விட்டு வெளியேறாது',
+      langLabel: 'மொழி',
+      heroTitle: '60 வினாடி இதய பரிசோதனை — வன்பொருள் இல்லை, இணையம் இல்லை.',
+      heroSub: 'நாடிசென்ஸ் எந்த ஸ்மார்ட்போன் கேமராவையும் நாடி மானிட்டராக்குகிறது. கிராமப்புற இந்தியாவின் ASHA பணியாளர்கள் மற்றும் PHC-க்காக — வீட்டு வாசலிலேயே ஒழுங்கற்ற தாள பரிசோதனை.',
+      start: 'பரிசோதனை தொடங்கு',
+      demo: 'டெமோ பயன்முறை (செயற்கை சிக்னல்)',
+      howTitle: 'எப்படி செயல்படுகிறது',
+      how1t: '1 · விரலை கேமராவில் வைக்கவும்',
+      how1d: 'முன் அல்லது பின் கேமராவை விரலால் மூடவும். பச்சை சேனல் = இரத்த அளவு.',
+      how2t: '2 · 60 வினாடி காத்திருங்கள்',
+      how2d: 'நாடி அலை எடுத்து, அசைவு சத்தத்தை நீக்கி, ஒவ்வொரு துடிப்பையும் கண்டறிகிறோம்.',
+      how3t: '3 · சாதனத்திலேயே AI பரிசோதனை',
+      how3d: '12 HRV அம்சங்கள் → சிறிய நியூரல் நெட் (12→20→10→1). ஆஃப்லைனில் ஒரு வினாடிக்குள்.',
+      how4t: '4 · பராமரிப்பு நிலை பெறுங்கள்',
+      how4d: 'பச்சை — வழக்கம். மஞ்சள் — 2 வாரத்தில் மீண்டும். சிவப்பு — ECG-க்கு பரிந்துரை.',
+      privacy: 'தனியுரிமை: எந்த படமும், வீடியோவும், சிக்னலும் சேமிக்கப்படாது. செயலாக்கம் இந்த போனிலேயே.',
+      methodTitle: 'முறை & வரம்புகள்',
+      methodBody: 'நாடிசென்ஸ் விரல் வீடியோவிலிருந்து (reflectance PPG) நாடி இயக்கவியலைக் கணக்கிட்டு 12 HRV அம்சங்களை (SDNN, RMSSD, pNN50, SD1/SD2, LF/HF, spectral entropy, turning-point, ectopy பகுதி, ஒழுங்கற்ற %, இதய துடிப்பு) உருவாக்குகிறது. 3-அடுக்கு நெட்வொர்க் P(ஒழுங்கற்ற தாளம்) தருகிறது. இது பரிசோதனை உதவி, நோயறிதல் அல்ல.',
+      captureTitle: 'விரலால் கேமராவை மூடவும்',
+      captureSub: 'பின் கேமரா மற்றும் flash இரண்டையும் விரலால் மூடவும். மெதுவாக அழுத்தவும், அசையாமல் இருங்கள்.',
+      camBtn: 'கேமரா திற',
+      usingCam: 'நேரடி கேமரா',
+      usingSim: 'செயற்கை டெமோ சிக்னல் (டெஸ்ட் fixture)',
+      quality: 'சிக்னல் தரம்',
+      hold: 'அசையாமல் இருங்கள்…',
+      liveBeats: 'துடிப்புகள்',
+      torchOn: 'flash ON',
+      torchOff: 'flash off — அறை வெளிச்சம் அதிகரிக்கவும் அல்லது லென்ஸ்+flash மீது லேசாக அழுத்தவும்',
+      torchWait: 'flash துவங்குகிறது…',
+      coachFlash: 'பலவீன சிக்னல் — பின் லென்ஸ் மற்றும் flash இரண்டையும் மூடவும், மெதுவாக அழுத்தவும், அறை வெளிச்சம் அதிகரிக்கவும்',
+      liveHr: 'நேரடி HR',
+      stop: 'முன்பே முடிக்க',
+      captureAgain: 'மீண்டும் எடு',
+      simNote: 'டெமோ பயன்முறை கேமராவிற்கான அதே DSP + classifier-ஐ இயக்குகிறது.',
+      camDenied: 'கேமரா இல்லை. டெமோ பயன்முறையை முயற்சிக்கவும்.',
+      camFallback: 'இங்கு கேமரா இல்லை — செயற்கை டெமோ சிக்னலுடன் தொடர்கிறது (அதே pipeline)',
+      camErrBlockedT: 'இந்த தளத்திற்கு கேமரா தடுக்கப்பட்டுள்ளது',
+      camErrBlockedB: 'கேமரா முன்பு இந்த தளத்திற்கு தடுக்கப்பட்டது. சரிசெய்ய: முகவரி பட்டியின் இடது பூட்டு / info ஐகானை தொட்டு → Site settings → Camera → Allow, பின்னர் "மீண்டும் முயலவும்" அழுத்தவும். அனுமதி கிடைத்ததும் சாதாரண டேப்களிலும் இயங்கும் — incognito தேவையில்லை.',
+      camErrBusyT: 'கேமரா வேறு பயன்பாட்டில் உள்ளது',
+      camErrBusyB: 'வேறு ஆப் அல்லது டேப் இப்போது கேமராவை பயன்படுத்துகிறது. அதை முழுமையாக மூடிவிட்டு "மீண்டும் முயலவும்" அழுத்தவும்.',
+      camErrNoCamT: 'கேமரா இல்லை',
+      camErrNoCamB: 'இந்த சாதனத்தில் கேமரா கிடைக்கவில்லை. வேறு தொலைபேசியை முயற்சிக்கவும், அல்லது டெமோ பயன்முறையில் அதே pipeline-ஐ பார்க்கவும்.',
+      camErrSecureT: 'கேமராவிற்கு பாதுகாப்பான இணைப்பு தேவை',
+      camErrSecureB: 'https:// பக்கங்களில் மட்டுமே உலாவிகள் கேமராவை அனுமதிக்கும். பாதுகாப்பான இணைப்பை திறக்கவும்: https://nadisense.vercel.app — டெமோ இங்கும் இயங்கும்.',
+      camErrGenT: 'கேமரா துவங்கவில்லை',
+      camErrGenB: 'கேமரா துவங்குவதில் சிக்கல் ஏற்பட்டது. "மீண்டும் முயலவும்" அழுத்தவும் — தொடர்ந்து தோல்வியுற்றால் டெமோ பயன்முறை (அதே pipeline) பயன்படுத்தவும்.',
+      camRetry: 'கேமரா மீண்டும் முயலவும்',
+      camUseDemo: 'டெமோ பயன்முறை பயன்படுத்தவும்',
+      analyzing: 'சாதனத்தில் பகுப்பாய்வு…',
+      stQuality: 'சிக்னல் தர சோதனை',
+      stBeats: 'துடிப்பு கண்டறிதல்',
+      stFeatures: '12 HRV அம்சங்கள்',
+      stClassify: 'நியூரல் நெட் மதிப்பீடு',
+      stDone: 'முடிந்தது',
+      resultTitle: 'பரிசோதனை முடிவு',
+      pLabel: 'P(ஒழுங்கற்ற தாளம்)',
+      beats: 'துடிப்புகள்',
+      duration: '30 வினாடி சாளரம்',
+      levelLow: 'தாளம் ஒழுங்காக உள்ளது',
+      levelLowD: 'ஒழுங்கற்ற தன்மை இல்லை. வழக்கமான பரிசோதனை: 6 மாதங்களுக்கு ஒருமுறை.',
+      levelMid: 'முடிவில்லை — மீண்டும் செய்யவும்',
+      levelMidD: 'சில ஒழுங்கற்ற தன்மை உள்ளது. 2 வாரங்களில் மீண்டும்; மாரடைப்பு/மூச்சுத் திணறல் இருந்தால் ECG பரிந்துரை.',
+      levelHigh: 'ஒழுங்கற்ற தாள முறை கண்டறியப்பட்டது',
+      levelHighD: 'துடிப்பு முறை ஒழுங்கற்ற தாளத்தை ஒத்துள்ளது. இது நோயறிதல் அல்ல — 7 நாட்களில் PHC/CHC-யில் 12-lead ECG செய்யுங்கள்.',
+      errTitle: 'நாடி படிக்க முடியவில்லை',
+      errD: 'போதுமான தெளிவான துடிப்புகள் இல்லை.',
+      errCamTips: 'தீர்வுகள்: ① Phone பயன்படுத்தவும் — பின் கேமராவையும் flash-ஐயும் விரலால் மூடி, flash ON வைக்கவும். ② Desktop webcam-ல் flash இல்லை (signal தட்டையாகும்) — phone அல்லது Demo Mode பயன்படுத்தவும். ③ அசையாமல், மெதுவாக அழுத்தவும். ④ அறை வெளிச்சம் அதிகரிக்கவும்.',
+      errSimTips: 'டெமோ சிக்னல் மிகவும் குழப்பமாக இருந்தது — வேறு seed உடன் "சாதாரண" அல்லது "AFib-போன்ற" நிலையை முயற்சிக்கவும்.',
+      errDemo: 'அதற்கு பதிலாக டெமோ பயன்முறை',
+      retake: 'மீண்டும் பரிசோதனை',
+      metrics: 'HRV அளவீடுகள்',
+      report: 'பரிசோதனை அறிக்கை',
+      reportAsk: 'நோயாளி பெயர் (விருப்பம்)',
+      saveReport: 'அறிக்கை அச்சிடு / பதிவிறக்கு',
+      copySummary: 'சுருக்கம் நகலெடு',
+      newTest: 'புதிய பரிசோதனை',
+      logbook: 'சமீபத்திய சோதனைகள் (இந்த போனில் மட்டும்)',
+      clearLog: 'நீக்கு',
+      disclaimer: 'நாடிசென்ஸ் பரிசோதனை உதவி மட்டுமே, மருத்துவ சாதனம் அல்ல. மருத்துவர் மற்றும் நிலையான ECG மூலம் உறுதிப்படுத்தவும்.',
+      qTitle: '2 கேள்விகள் (குரல் அல்லது தட்டச்சு)',
+      q1: 'இதய நோய், BP அல்லது நீரிழிவு வரலாறு?',
+      q2: 'இப்போது அறிகுறிகள்: மார்பு வலி, படபடப்பு, மூச்சுத் திணறல்?',
+      qYes: 'ஆம்', qNo: 'இல்லை', qNone: 'இல்லை',
+      qAnswered: 'பதில்கள் அறிக்கையில் பதிவாகும்',
+      qSkip: 'தவிர்க்கவும் (பரிந்துரைக்கப்படுகிறது)',
+      askLater: 'குரல் மூலம் கேள்',
+      voiceUnsupported: 'இந்த உலாவியில் குரல் இல்லை — தட்டச்சு செய்யவும்.',
+      listening: 'கேட்கிறேன்… "ஆம்" அல்லது "இல்லை" சொல்லுங்கள்',
+      footNote: 'Agent Matrix · TECHNOVA 2026 · TSM, மதுரை',
+      seedLabel: 'சிமுலேஷன் விதை',
+    },
+  };
+
+  let lang = 'en';
+
+  function setLang(l) { lang = STR[l] ? l : 'en'; }
+  function getLang() { return lang; }
+  function t(key) {
+    const s = STR[lang] && STR[lang][key] !== undefined ? STR[lang] : STR.en;
+    return s[key] !== undefined ? s[key] : (STR.en[key] !== undefined ? STR.en[key] : key);
+  }
+
+  /* Walk the DOM once and stamp every [data-i18n] element. */
+  function applyDom(root) {
+    (root || document).querySelectorAll('[data-i18n]').forEach(el => {
+      el.textContent = t(el.getAttribute('data-i18n'));
+    });
+    (root || document).querySelectorAll('[data-i18n-ph]').forEach(el => {
+      el.setAttribute('placeholder', t(el.getAttribute('data-i18n-ph')));
+    });
+  }
+
+  return { setLang, getLang, t, applyDom, STR };
+})();
+
+if (typeof module !== 'undefined') module.exports = I18N;
+
+</script>
+<script>
+/*
+ * asr.js — tiny wrapper around the Web Speech API for the
+ * vernacular pre-screening questionnaire (en-IN / hi-IN / ta-IN).
+ * Falls back to typing when the browser lacks speech recognition.
+ */
+
+const Asr = (() => {
+  'use strict';
+
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recog = null;
+
+  function supported() { return !!SR; }
+
+  /*
+   * Recognise a single utterance returning the transcript via callback.
+   * Kept promise-based with a 8 s timeout so the flow never hangs.
+   */
+  function once(langTag) {
+    return new Promise((resolve, reject) => {
+      if (!SR) return reject(new Error('unsupported'));
+      try {
+        recog = new SR();
+        recog.lang = langTag || 'en-IN';
+        recog.interimResults = false;
+        recog.maxAlternatives = 1;
+        let done = false;
+        const finish = (err, txt) => {
+          if (done) return;
+          done = true;
+          if (err) reject(err); else resolve(txt || '');
+        };
+        recog.onresult = (e) => finish(null, e.results[0][0].transcript);
+        recog.onerror = (e) => finish(new Error(e.error || 'error'));
+        recog.onend = () => finish(new Error('timeout'));
+        recog.start();
+        setTimeout(() => finish(new Error('timeout')), 8000);
+      } catch (e) {
+        reject(e);
+      }
+    });
+  }
+
+  function stop() { if (recog) { try { recog.stop(); } catch (e) {} } }
+
+  return { supported, once, stop };
+})();
+
+</script>
+<script>
+/*
+ * app.js — NadiSense application shell
+ * ------------------------------------
+ * View state machine (onboard -> capture -> analyzing -> result),
+ * capture engine (camera PPG or synthetic demo source), live waveform
+ * rendering, on-device classification, result dashboard, offline
+ * logbook and printable report.
+ *
+ * Built for the TECHNOVA 2026 demo: everything runs from a single
+ * folder with zero build step and zero network calls.
+ */
+
+(() => {
+  'use strict';
+
+  const $ = (s) => document.querySelector(s);
+  const $$ = (s) => Array.from(document.querySelectorAll(s));
+
+  const app = {
+    lang: 'en',
+    mode: null,            // 'camera' | 'sim'
+    running: false,
+    buffer: [],            // {t, v} unified timeline (camera or sim)
+    t0: 0,
+    lastHrTick: 0,
+    simSeed: 7,
+    result: null,
+    answers: { q1: null, q2: null },
+    qIndex: 0,
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* VIEW SWITCHING                                                     */
+  /* ------------------------------------------------------------------ */
+  function show(view) {
+    $$('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + view));
+    window.scrollTo(0, 0);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* SOURCES                                                            */
+  /* ------------------------------------------------------------------ */
+  /* Pick the camera channel with the strongest pulsatile contrast.
+     Score = relative std (AC/DC), penalised hard when the channel is
+     clipped near white (saturated) or near black. */
+  function pickCamChannel(gVals, rVals) {
+    const stat = (x) => {
+      let m = 0; for (const v of x) m += v;
+      m /= (x.length || 1);
+      let s = 0; for (const v of x) s += (v - m) * (v - m);
+      return { m, cv: Math.sqrt(s / (x.length || 1)) / Math.max(m, 1e-9) };
+    };
+    const score = (x) => {
+      const st = stat(x);
+      let sc = st.cv;
+      if (st.m > 240) sc *= 0.15;   // near clip: information is likely destroyed
+      if (st.m < 8)   sc *= 0.15;   // near black: nothing transmitting
+      return sc;
+    };
+    return score(rVals) > score(gVals) ? 'red' : 'green';
+  }
+
+  const sources = {
+    cam: null,
+    simData: null,
+
+    async startCamera(videoEl) {
+      sources.cam = new PpgCamera.Source();
+      await sources.cam.start(videoEl);
+    },
+    startSim() {
+      const rec = Simulator.generate($('#sim-kind').value, app.simSeed);
+      sources.simData = rec.signal;
+      return rec;
+    },
+    /* Return a uniform-30Hz window of signal values from t0 to t0+secs.
+       Reads from app.buffer — the single archive BOTH sources write into.
+       (Reading the camera queue here was the camera-mode bug: captureLoop
+       drains that queue every frame, so any queue-based read saw ~1 frame
+       and produced a flat signal → "could not read the pulse".) */
+    window: (t0, secs) => {
+      const n = Math.max(2, Math.floor(secs * 30));
+      const out = new Float64Array(n);
+
+      if (app.mode === 'camera') {
+        const buf = app.buffer;            // [{t,v,r,g,b}], t seconds, ~30 Hz
+        if (!buf.length) return out;
+        // interpolate both channels
+        const gVals = new Float64Array(n), rVals = new Float64Array(n);
+        let j = 0;                          // two-pointer march (buf is time-sorted)
+        for (let i = 0; i < n; i++) {
+          const g = t0 + i / 30;
+          while (j < buf.length - 1 && buf[j + 1].t < g) j++;
+          const a = buf[j], b = buf[Math.min(buf.length - 1, j + 1)];
+          const d = Math.max(b.t - a.t, 1e-9);
+          const f = Math.max(0, Math.min(1, (g - a.t) / d));
+          // samples pre-dating the RGB fix only carry .v (= green) — fall back
+          const ag = a.g !== undefined ? a.g : a.v, bg = b.g !== undefined ? b.g : b.v;
+          gVals[i] = ag + (bg - ag) * f;
+          if (a.r !== undefined) rVals[i] = a.r + (b.r - a.r) * f;
+        }
+        // --- adaptive channel pick (once per capture, after ~3 s) ---------
+        // Flash-behind-fingertip SATURATES green (clip ≈ 255 flat) while the
+        // pulsatility survives in RED (transmission mode). Score both and use
+        // the better one; remember the choice for the whole capture.
+        if (!app.camChan && buf[buf.length - 1].t - buf[0].t >= 3) {
+          app.camChan = pickCamChannel(gVals, rVals, window);
+        }
+        const chosen = app.camChan === 'red' ? rVals : gVals;
+        // rescue: chosen channel went saturated later (grip tightened) → switch
+        if (app.camChan) {
+          let m = 0; for (const v of chosen) m += v; m /= chosen.length;
+          const sat = app.camChan === 'red' ? m > 235 : m > 240;
+          if (sat) app.camChan = app.camChan === 'red' ? 'green' : 'red';
+        }
+        out.set(app.camChan === 'red' ? rVals : gVals);
+        return out;
+      }
+
+      // simulator: pre-generated 30 s signal
+      const sd = sources.simData;
+      if (!sd || !sd.length) return out;            // defensive: never crash on null
+      const start = Math.floor(t0 * 30);
+      for (let i = 0; i < n; i++) {
+        const idx = start + i;
+        out[i] = idx >= 0 && idx < sd.length ? sd[idx] : 0;
+      }
+      return out;
+    },
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* CAPTURE ENGINE (unified rAF loop)                                  */
+  /* ------------------------------------------------------------------ */
+  const waveCtx = { t: 0 };
+
+  function currentTime() {
+    return sources.simData !== null && app.mode === 'sim'
+      ? (performance.now() - app.t0) / 1000 : 0;
+  }
+
+  function captureLoop(now) {
+    if (!app.running) return;
+    const t = (now - app.t0) / 1000;
+
+    if (app.mode === 'sim') {
+      // synthetic source: emit samples as wall-clock time advances
+      const sim = sources.simData;
+      const idx = Math.floor(t * 30);
+      while (app.simCursor <= idx && app.simCursor < sim.length) {
+        app.buffer.push({ t: app.simCursor / 30, v: sim[app.simCursor] });
+        app.simCursor++;
+      }
+    } else if (sources.cam) {
+      // camera source: drain the worker queue
+      const q = sources.cam.queue;
+      if (q.length) {
+        const lastT = q[q.length - 1].t;
+        // push only newer samples than the last one we've emitted
+        while (q.length && q[0].t <= (app.buffer.length ? app.buffer[app.buffer.length - 1].t : -1)) q.shift();
+        for (const s of q) app.buffer.push(s);
+        q.length = 0;
+        waveCtx.t = lastT;
+        if (app.camChan) {
+          const el = $('#capture-state');
+          if (el) el.textContent = I18N.t('usingCam') + ' · ' + app.camChan.toUpperCase() + ' ch';
+        }
+      }
+    }
+
+    drawWave();
+    updateQuality();
+    updateLiveHr();
+
+    const elapsed = app.mode === 'sim'
+      ? (app.simCursor / 30)
+      : (app.buffer.length ? app.buffer[app.buffer.length - 1].t : 0);
+    updateTimer(elapsed);
+
+    if (elapsed >= 30) { stopCapture(); return; }
+    requestAnimationFrame(captureLoop);
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* LIVE WAVEFORM + METERS                                             */
+  /* ------------------------------------------------------------------ */
+  const waveCanvas = null;
+
+  function drawWave() {
+    const c = $('#wave');
+    const ctx = c.getContext('2d');
+    const W = c.width = c.clientWidth * devicePixelRatio;
+    const H = c.height = c.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, W, H);
+
+    const span = 12; // seconds shown
+    const now = app.mode === 'sim'
+      ? (app.simCursor / 30)
+      : (app.buffer.length ? app.buffer[app.buffer.length - 1].t : 0);
+    if (now < 0.5) { drawCenter(ctx, W, H); return; }
+
+    const t0 = Math.max(0, now - span);
+    const sig = sources.window(t0, Math.min(span, now - t0 + 0.001));
+    if (!sig || sig.length < 8) { drawCenter(ctx, W, H); return; }
+
+    const bp = DSP.bandpass(sig, 0.6, 3.5, 30);
+    let mn = 1e9, mx = -1e9;
+    for (const v of bp) { if (v < mn) mn = v; if (v > mx) mx = v; }
+    const rng = Math.max(mx - mn, 1e-6);
+
+    ctx.strokeStyle = '#2dd4bf';
+    ctx.lineWidth = Math.max(1.5, W / 900);
+    ctx.beginPath();
+    const n = bp.length;
+    for (let i = 0; i < n; i++) {
+      const x = (i / Math.max(n - 1, 1)) * W;
+      const y = H * 0.5 - ((bp[i] - mn) / rng - 0.5) * H * 0.82;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+
+    // right-edge time marker
+    ctx.fillStyle = 'rgba(148,163,184,.8)';
+    ctx.font = `${Math.max(10, W / 60)}px system-ui`;
+    ctx.fillText(`${now.toFixed(0)}s`, W - 52, 20);
+  }
+
+  function drawCenter(ctx, W, H) {
+    ctx.strokeStyle = 'rgba(148,163,184,.4)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([6, 6]);
+    ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  function updateQuality() {
+    const now = app.mode === 'sim'
+      ? (app.simCursor / 30)
+      : (app.buffer.length ? app.buffer[app.buffer.length - 1].t : 0);
+    if (now < 4) return;
+    const sig = sources.window(Math.max(0, now - 8), Math.min(8, now));
+    if (!sig || sig.length < 64) return;
+    const det = DSP.detrend(sig);
+    const bp = DSP.bandpass(det, 0.6, 3.5, 30);
+    const pks = DSP.detectPeaks(bp);
+    const qrr = []; for (let i = 1; i < pks.length; i++) qrr.push((pks[i] - pks[i - 1]) / 30);
+    const q = DSP.qualityIndex(bp, det, qrr);
+    const bar = $('#quality-bar');
+    bar.style.width = `${Math.round(q * 100)}%`;
+    bar.style.background = q > 0.6 ? '#22c55e' : q > 0.35 ? '#f59e0b' : '#ef4444';
+    $('#quality-txt').textContent = `${Math.round(q * 100)}%`;
+    const hint = $('.q-hint');
+    if (hint) hint.textContent = (app.mode === 'camera' && q <= 0.6) ? I18N.t('coachFlash') : I18N.t('hold');
+  }
+
+  function updateLiveHr() {
+    const now = app.mode === 'sim'
+      ? (app.simCursor / 30)
+      : (app.buffer.length ? app.buffer[app.buffer.length - 1].t : 0);
+    if (now - app.lastHrTick < 1.5) return;
+    app.lastHrTick = now;
+    if (now < 6) return;
+    const sig = sources.window(Math.max(0, now - 10), 10);
+    if (!sig || sig.length < 60) return;
+    const bp = DSP.bandpass(sig, 0.6, 3.5, 30);
+    const pks = DSP.detectPeaks(bp);
+    const beatsEl = $('#live-beats');
+    if (beatsEl) beatsEl.textContent = pks.length;
+    if (pks.length >= 4) {
+      const rr = [];
+      for (let i = 1; i < pks.length; i++) rr.push((pks[i] - pks[i - 1]) / 30);
+      const med = rr.slice().sort((a, b) => a - b)[rr.length >> 1];
+      $('#live-hr').textContent = Math.round(60 / med);
+    }
+  }
+
+  function updateTimer(elapsed) {
+    const left = Math.max(0, 30 - elapsed);
+    const bar = $('#time-bar');
+    bar.style.width = `${(elapsed / 30) * 100}%`;
+    $('#time-txt').textContent = `${left.toFixed(0)}s`;
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* FLOW CONTROL                                                       */
+  /* ------------------------------------------------------------------ */
+
+  // Pre-flight: getUserMedia only exists in secure contexts (https:// or
+  // localhost). file:// pages, plain http:// hosts and some in-app webviews
+  // hide it entirely — name the error so the panel can give the right fix.
+  function preflightCamera() {
+    if (!navigator.mediaDevices || typeof navigator.mediaDevices.getUserMedia !== 'function') {
+      const e = new Error('getUserMedia unavailable in this context');
+      e.name = 'InsecureContext';
+      throw e;
+    }
+  }
+
+  // Map getUserMedia error names → the localized explanation + fix.
+  // Returns true if a panel was shown (caller stops; user decides).
+  function showCamError(err) {
+    const map = {
+      NotAllowedError: ['camErrBlockedT', 'camErrBlockedB'],
+      PermissionDeniedError: ['camErrBlockedT', 'camErrBlockedB'],  // legacy Chrome name
+      InsecureContext: ['camErrSecureT', 'camErrSecureB'],
+      SecurityError: ['camErrSecureT', 'camErrSecureB'],
+      NotFoundError: ['camErrNoCamT', 'camErrNoCamB'],
+      DevicesNotFoundError: ['camErrNoCamT', 'camErrNoCamB'],       // legacy name
+      NotReadableError: ['camErrBusyT', 'camErrBusyB'],
+      TrackStartError: ['camErrBusyT', 'camErrBusyB'],              // legacy name
+      AbortError: ['camErrBusyT', 'camErrBusyB'],
+    };
+    const keys = map[err && err.name] || ['camErrGenT', 'camErrGenB'];
+    const tEl = $('#cam-err-title'), bEl = $('#cam-err-body'), panel = $('#cam-error');
+    if (!tEl || !panel) return false;
+    tEl.textContent = I18N.t(keys[0]);
+    bEl.textContent = I18N.t(keys[1]);
+    panel.classList.remove('hidden');
+    panel.scrollIntoView && panel.scrollIntoView({ block: 'nearest' });
+    return true;
+  }
+
+  async function startCapture(mode) {
+    $('#cam-error').classList.add('hidden');   // fresh attempt always clears the panel
+    app.mode = mode;
+    app.buffer = [];
+    app.simCursor = 0;
+    app.camChan = null;                      // re-pick channel each capture
+    app.answers = { q1: null, q2: null };
+    app.qIndex = 0;
+    show('capture');
+    $('#cam-feed').classList.toggle('hidden', mode !== 'camera');
+    $('#sim-panel').classList.toggle('hidden', mode !== 'sim');
+    $('#capture-state').textContent = mode === 'camera' ? I18N.t('usingCam') : I18N.t('usingSim');
+
+    try {
+      if (mode === 'camera') {
+        preflightCamera();                   // names non-secure contexts BEFORE the OS prompt path
+        const updTorch = (on) => {
+          const el = $('#torch-txt');
+          if (el) el.textContent = on ? I18N.t('torchOn') : I18N.t('torchOff');
+        };
+        updTorch(null);
+        await sources.startCamera($('#cam-video'));
+        if (sources.cam) {
+          sources.cam.onTorch = updTorch;
+          updTorch(sources.cam.torch);
+        }
+      } else {
+        sources.startSim();
+      }
+      $('#wave').classList.remove('hidden');
+      $('#quality-box').classList.remove('hidden');
+      app.running = true;
+      app.t0 = performance.now();
+      app.lastHrTick = 0;                 // reset live-HR so old sessions don't leak
+      $('#live-hr').textContent = '\u2014';
+      requestAnimationFrame(captureLoop);
+      $('#capture-actions').classList.remove('hidden');
+      $('#cam-btn-row').classList.add('hidden');
+    } catch (e) {
+      // Never silently dead-end: tell the user WHAT blocked the camera and
+      // HOW to unblock it (this is what makes normal tabs == incognito),
+      // with Retry + Demo buttons. If the panel itself is somehow missing,
+      // fall back to the demo source so the screen still never dies.
+      console.warn('camera start failed:', e && e.name, e);
+      app.running = false;
+      $('#capture-state').textContent = '—';
+      if (showCamError(e)) return;
+      console.warn('error panel unavailable, falling back to demo source');
+      app.mode = 'sim';
+      app.camChan = null;
+      $('#cam-feed').classList.add('hidden');
+      $('#sim-panel').classList.remove('hidden');
+      $('#capture-state').textContent = I18N.t('camFallback');
+      try {
+        sources.startSim();
+        $('#wave').classList.remove('hidden');
+        $('#quality-box').classList.remove('hidden');
+        app.running = true;
+        app.t0 = performance.now();
+        app.lastHrTick = 0;
+        $('#live-hr').textContent = '\u2014';
+        requestAnimationFrame(captureLoop);
+        $('#capture-actions').classList.remove('hidden');
+        $('#cam-btn-row').classList.add('hidden');
+      } catch (e2) {
+        console.error('demo source failed:', e2);
+        show('onboard');
+      }
+    }
+  }
+
+  function stopCapture() {
+    app.running = false;
+    if (sources.cam) { sources.cam.stop(); sources.cam = null; }
+    analyze();
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* ANALYSIS                                                           */
+  /* ------------------------------------------------------------------ */
+  function analyze() {
+    show('analyzing');
+    $('#analyzing').textContent = I18N.t('analyzing');
+
+    const now = app.mode === 'sim'
+      ? (app.simCursor / 30)
+      : (app.buffer.length ? app.buffer[app.buffer.length - 1].t : 0);
+    const t0 = Math.max(0, now - 30);
+    let sig = sources.window(t0, Math.min(30, now - t0 + 0.001));
+    // camera warm-up: phone auto-exposure/auto-focus "hunts" for the first
+    // ~2 s and that ramp wrecks peak detection — analyse the stable tail.
+    if (app.mode === 'camera' && sig.length > 12 * 30) {
+      sig = sig.slice(2 * 30);
+    }
+    const ft = DSP.features(sig);
+    const det = ft ? DSP.detrend(sig) : null;
+    const bp = ft ? DSP.bandpass(det, 0.6, 3.5, 30) : null;
+    const quality = ft ? DSP.qualityIndex(bp, det, ft.rr) : 0;
+    const res = Classifier.assess(ft, quality);
+    app.result = Object.assign({}, res, {
+      features: ft, quality, waveform: sig || new Float64Array(0), t0, now,
+      ts: Date.now(), mode: app.mode, answers: Object.assign({}, app.answers),
+    });
+
+    // staged reveal (the compute really is instant — this just narrates it)
+    const steps = ['stQuality', 'stBeats', 'stFeatures', 'stClassify'];
+    steps.forEach((k, i) => setTimeout(() => {
+      const el = $(`#step-${i}`);
+      el.classList.add('done');
+      el.querySelector('span').textContent = I18N.t(k);
+      el.querySelector('.chk').textContent = '✓';
+      if (i === steps.length - 1) setTimeout(showResult, 420);
+    }, 240 * (i + 1)));
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* RESULTS                                                            */
+  /* ------------------------------------------------------------------ */
+  function showResult() {
+    show('result');
+    const r = app.result;
+    const level = r.level;
+    const lvlColors = { low: '#22c55e', mid: '#f59e0b', high: '#ef4444', error: '#64748b' };
+    const color = lvlColors[level] || lvlColors.low;
+
+    if (level === 'error' || !r.features) {
+      // mode-aware troubleshooting: a failed camera capture usually means
+      // flat webcam signal (no flash) — say why and what to do next.
+      $('#err-tips').dataset.i18n = r.mode === 'camera' ? 'errCamTips' : 'errSimTips';
+      $('#err-tips').textContent = I18N.t(r.mode === 'camera' ? 'errCamTips' : 'errSimTips');
+      $('#result-error').classList.remove('hidden');
+      $('#result-dash').classList.add('hidden');
+      $('#btn-new').classList.remove('hidden');
+      return;
+    }
+
+    $('#result-error').classList.add('hidden');
+    $('#result-dash').classList.remove('hidden');
+
+    // gauge
+    const p = r.p;
+    const angle = -90 + 180 * p;
+    const needle = $('#gauge-needle');
+    needle.setAttribute('transform', `rotate(${angle} 100 100)`);
+    needle.style.transition = 'transform 1.2s cubic-bezier(.2,.8,.2,1)';
+    $('#p-value').textContent = `${(p * 100).toFixed(0)}%`;
+    $('#p-label').textContent = I18N.t('pLabel');
+    $('#level-chip').textContent = I18N.t(
+      level === 'low' ? 'levelLow' : level === 'mid' ? 'levelMid' : 'levelHigh');
+    $('#level-chip').style.background = color;
+
+    const levelBody = $('#level-body');
+    levelBody.textContent = I18N.t(
+      level === 'low' ? 'levelLowD' : level === 'mid' ? 'levelMidD' : 'levelHighD');
+
+    // metric cards
+    const f = r.features;
+    const cards = [
+      ['HR', `${Math.round(f.hrMean)}`, 'bpm'],
+      ['SDNN', `${f.sdnn.toFixed(0)}`, 'ms'],
+      ['RMSSD', `${f.rmssd.toFixed(0)}`, 'ms'],
+      ['pNN50', `${f.pnn50.toFixed(0)}`, '%'],
+      ['SD1/SD2', `${f.sd1sd2.toFixed(2)}`, ''],
+      ['LF/HF', `${f.lf_hf.toFixed(2)}`, ''],
+      ['SpecEn', `${f.s_ent.toFixed(2)}`, ''],
+      ['Beats', `${f.n_beats}`, ''],
+    ];
+    $('#metric-grid').innerHTML = cards.map(([k, v, u]) => `
+      <div class="metric"><div class="m-k">${k}</div><div class="m-v">${v}<span class="m-u">${u}</span></div></div>`).join('');
+
+    // context notes (warnings etc.) — translated keys
+    const notes = (r.notes || []).map(k => {
+      const map = {
+        WARN_HR_RANGE: 'Note: HR outside the 40–180 range — retake while resting.',
+        WARN_SHORT: 'Note: short capture window — the retake suggestion is only for very short tests.',
+        WARN_QUALITY: 'Note: low signal quality — retake in a quieter spot.',
+        WARN_FEW_BEATS: 'Note: too few clean beats.',
+        NOTE_ECTOPIC: 'Some ectopy-like beats present (often benign; can mimic irregularity).',
+        NOTE_LOW_HRV: 'Low HRV — often stress/sleep-related; not a diagnosis.',
+      };
+      return `<li>${map[k] || k}</li>`;
+    }).join('');
+    $('#notes').innerHTML = notes ? `<ul>${notes}</ul>` : '';
+
+    // plots
+    drawTachogram(f.rr, color);
+    drawPoincare(f.rr);
+    drawReviewWave(r.waveform);
+
+    // questionnaire state
+    const qWrap = $('#q-answers');
+    const a1 = app.answers.q1, a2 = app.answers.q2;
+    qWrap.textContent = `${I18N.t('q1')} ${a1 ? (a1.yes ? I18N.t('qYes') : I18N.t('qNo')) : '—'} · ${I18N.t('q2')} ${a2 ? a2.text : '—'}`;
+
+    saveLog(r);
+    renderLogbook();
+  }
+
+  function drawTachogram(rr, color) {
+    const c = $('#tachogram'); const ctx = c.getContext('2d');
+    const W = c.width = c.clientWidth * devicePixelRatio;
+    const H = c.height = c.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, W, H);
+    if (!rr || rr.length < 2) return;
+    const max = 1.4, min = 0.3;
+    const bw = W / rr.length;
+    rr.forEach((v, i) => {
+      const h = (v - min) / (max - min) * H * 0.86;
+      ctx.fillStyle = i % 2 ? color : color + 'cc';
+      ctx.globalAlpha = 0.85;
+      ctx.fillRect(i * bw + 1, H - h, Math.max(bw - 2, 1), h);
+    });
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = 'rgba(148,163,184,.5)';
+    ctx.strokeRect(0.5, 0.5, W - 1, H - 1);
+  }
+
+  function drawPoincare(rr) {
+    const c = $('#poincare'); const ctx = c.getContext('2d');
+    const W = c.width = c.clientWidth * devicePixelRatio;
+    const H = c.height = c.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, W, H);
+    if (!rr || rr.length < 3) return;
+    const pts = [];
+    for (let i = 0; i + 1 < rr.length; i++) pts.push([rr[i], rr[i + 1]]);
+    const min = 0.3, max = 1.4;
+    ctx.fillStyle = '#2dd4bf';
+    ctx.globalAlpha = 0.75;
+    for (const [x, y] of pts) {
+      const px = (x - min) / (max - min) * (W - 12) + 6;
+      const py = H - 6 - (y - min) / (max - min) * (H - 12);
+      ctx.beginPath(); ctx.arc(px, py, 2.2, 0, Math.PI * 2); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  function drawReviewWave(sig) {
+    const c = $('#review-wave'); const ctx = c.getContext('2d');
+    const W = c.width = c.clientWidth * devicePixelRatio;
+    const H = c.height = c.clientHeight * devicePixelRatio;
+    ctx.clearRect(0, 0, W, H);
+    if (!sig || sig.length < 16) return;
+    const det = DSP.detrend(sig);
+    const bp = DSP.bandpass(det, 0.6, 3.5, 30);
+    let mn = 1e9, mx = -1e9;
+    for (const v of bp) { if (v < mn) mn = v; if (v > mx) mx = v; }
+    const rng = Math.max(mx - mn, 1e-6);
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = Math.max(1.2, W / 1200);
+    ctx.beginPath();
+    for (let i = 0; i < bp.length; i++) {
+      const x = i / (bp.length - 1) * W;
+      const y = H / 2 - ((bp[i] - mn) / rng - 0.5) * H * 0.8;
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    // mark detected peaks
+    const pks = DSP.detectPeaks(bp);
+    ctx.fillStyle = '#f472b6';
+    for (const pk of pks) {
+      const x = pk / (bp.length - 1) * W;
+      const y = H / 2 - ((bp[pk] - mn) / rng - 0.5) * H * 0.8;
+      ctx.beginPath(); ctx.arc(x, y, 3, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* LOGBOOK (local only)                                               */
+  /* ------------------------------------------------------------------ */
+  function saveLog(r) {
+    try {
+      const log = JSON.parse(localStorage.getItem('nadi-log') || '[]');
+      log.unshift({
+        ts: r.ts, level: r.level, p: r.p ? Math.round(r.p * 100) : null,
+        hr: r.features ? Math.round(r.features.hrMean) : null,
+        sdnn: r.features ? Math.round(r.features.sdnn) : null,
+        mode: r.mode,
+      });
+      localStorage.setItem('nadi-log', JSON.stringify(log.slice(0, 12)));
+    } catch (e) { /* private mode etc. — ignore */ }
+  }
+
+  function renderLogbook() {
+    try {
+      const log = JSON.parse(localStorage.getItem('nadi-log') || '[]');
+      const el = $('#logbook-list');
+      const colors = { low: '#22c55e', mid: '#f59e0b', high: '#ef4444', error: '#64748b' };
+      el.innerHTML = log.length ? log.slice(0, 6).map(e => `
+        <div class="log-row">
+          <span class="dot" style="background:${colors[e.level] || '#777'}"></span>
+          <span>${new Date(e.ts).toLocaleString()}</span>
+          <span class="log-nums">${e.hr ?? '—'} bpm ${e.p !== null ? '· ' + e.p + '%' : ''}</span>
+        </div>`).join('') : '<div class="log-empty">—</div>';
+      $('#logbook').classList.toggle('hidden', log.length === 0);
+    } catch (e) { /* ignore */ }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* REPORT (printable HTML + copy)                                     */
+  /* ------------------------------------------------------------------ */
+  function reportHTML() {
+    const r = app.result;
+    const f = r.features;
+    const lvlName = { low: 'Regular rhythm', mid: 'Inconclusive', high: 'Irregular pattern flagged', error: 'Unreadable' }[r.level];
+    const name = ($('#patient-name').value || '').trim() || '(name withheld)';
+    const levelNamesT = { low: I18N.t('levelLow'), mid: I18N.t('levelMid'), high: I18N.t('levelHigh') };
+    return `<!doctype html><html><head><meta charset="utf-8"><title>NadiSense report</title>
+<style>
+ body{font:14px/1.5 system-ui,Segoe UI,Roboto,sans-serif;color:#111;max-width:720px;margin:24px auto;padding:0 16px}
+ h1{font-size:20px} .sub{color:#555} .head{display:flex;justify-content:space-between;align-items:baseline;border-bottom:2px solid #0f766e;padding-bottom:8px}
+ .badge{display:inline-block;padding:4px 12px;border-radius:999px;color:#fff;font-weight:600;margin:10px 0}
+ table{border-collapse:collapse;width:100%;margin:12px 0} td,th{border:1px solid #d5d9de;padding:6px 10px;text-align:left}
+ th{background:#f1f5f9} .warn{background:#fff7ed;border:1px solid #fdba74;padding:10px;border-radius:8px;margin:12px 0}
+ .foot{font-size:11px;color:#666;border-top:1px solid #ddd;margin-top:20px;padding-top:8px}
+ @media print{.no-print{display:none}}
+</style></head><body>
+<div class="head"><div><h1>NadiSense — Screening Report</h1><div class="sub">${I18N.t('appName')} · on-device AI rhythm screening (PPG)</div></div><div class="sub">${new Date(r.ts).toLocaleString()}</div></div>
+<p><b>Person:</b> ${name}</p>
+<span class="badge" style="background:${r.level === 'low' ? '#16a34a' : r.level === 'mid' ? '#d97706' : '#dc2626'}">${levelNamesT[r.level] || lvlName} · P=${(r.p * 100).toFixed(0)}%</span>
+<p>${I18N.t(r.level === 'low' ? 'levelLowD' : r.level === 'mid' ? 'levelMidD' : 'levelHighD')}</p>
+<table><tr><th>Metric</th><th>Value</th></tr>
+<tr><td>Heart rate</td><td>${Math.round(f.hrMean)} bpm</td></tr>
+<tr><td>SDNN</td><td>${f.sdnn.toFixed(0)} ms</td></tr>
+<tr><td>RMSSD</td><td>${f.rmssd.toFixed(0)} ms</td></tr>
+<tr><td>pNN50</td><td>${f.pnn50.toFixed(0)} %</td></tr>
+<tr><td>SD1/SD2</td><td>${f.sd1sd2.toFixed(2)}</td></tr>
+<tr><td>LF/HF</td><td>${f.lf_hf.toFixed(2)}</td></tr>
+<tr><td>Sample entropy</td><td>${f.sampen.toFixed(2)}</td></tr>
+<tr><td>Beats analysed</td><td>${f.n_beats}</td></tr></table>
+<p><b>Questionnaire:</b> history — ${app.answers.q1 ? (app.answers.q1.yes ? 'Yes' : 'No') : 'not asked'}; symptoms — ${app.answers.q2 ? app.answers.q2.text : 'not asked'}</p>
+<div class="warn"><b>Next step:</b> ${r.level === 'high' ? 'Refer for a 12-lead ECG within 7 days. This is a screening signal — not a diagnosis.' : r.level === 'mid' ? 'Repeat screening in 2 weeks; refer sooner if symptomatic.' : 'Routine follow-up in 6 months; seek care sooner if symptoms appear.'}</div>
+<p class="foot">${I18N.t('disclaimer')}<br>NadiSense v1.0 · Agent Matrix · TECHNOVA 2026 · generated on-device, no data uploaded.</p>
+<button class="no-print" onclick="window.print()">Print</button>
+</body></html>`;
+  }
+
+  function buildReport() {
+    const html = reportHTML();
+    const blob = new Blob([html], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `nadi-report-${new Date().toISOString().slice(0, 10)}.html`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
+  async function copySummary() {
+    const r = app.result; if (!r) return;
+    const f = r.features;
+    const txt = `NadiSense screening ${new Date(r.ts).toLocaleString()}\n` +
+      `Level: ${r.level} · P(irregular)=${(r.p * 100).toFixed(0)}%\n` +
+      `HR ${Math.round(f.hrMean)} bpm · SDNN ${f.sdnn.toFixed(0)} ms · RMSSD ${f.rmssd.toFixed(0)} ms · ${f.n_beats} beats`;
+    try { await navigator.clipboard.writeText(txt); } catch (e) { prompt('Copy:', txt); }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* VOICE QUESTIONNAIRE                                                */
+  /* ------------------------------------------------------------------ */
+  const QUESTIONS = () => [I18N.t('q1'), I18N.t('q2')];
+  const LANG_TAG = () => ({ en: 'en-IN', hi: 'hi-IN', ta: 'ta-IN' }[app.lang] || 'en-IN');
+
+  async function askNext() {
+    if (app.qIndex >= 2) return;
+    const q = QUESTIONS()[app.qIndex];
+    $('#q-text').textContent = q;
+    $('#q-status').textContent = I18N.t('listening');
+    try {
+      const txt = await Asr.once(LANG_TAG());
+      // robust: explicit no-words → no, anything else (or silence) → yes
+      const isNo = /no|nahin|nahi|nah|இல்லை|illai|ille|नहीं/.test(String(txt).toLowerCase());
+      const ans = { yes: !isNo, text: txt && txt.trim() ? String(txt).trim() : (isNo ? 'no' : 'yes') };
+      app.answers[app.qIndex === 0 ? 'q1' : 'q2'] = ans;
+    } catch (e) {
+      // voice failed — leave unanswered, tell user to type
+      $('#q-status').textContent = I18N.t('voiceUnsupported');
+      return;
+    }
+    app.qIndex++;
+    if (app.qIndex < 2) {
+      setTimeout(askNext, 600);
+    } else {
+      $('#q-status').textContent = I18N.t('qAnswered');
+    }
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* WIRING                                                             */
+  /* ------------------------------------------------------------------ */
+  function wire() {
+    $('#btn-start').addEventListener('click', () => startCapture('camera'));
+    $('#btn-demo').addEventListener('click', () => startCapture('sim'));
+    $('#btn-stop').addEventListener('click', stopCapture);
+    $('#sim-seed').addEventListener('input', (e) => { app.simSeed = parseInt(e.target.value || '7', 10); });
+    $('#btn-retake').addEventListener('click', () => show('onboard'));
+    $('#btn-err-demo').addEventListener('click', () => startCapture('sim'));
+    $('#cam-retry').addEventListener('click', () => startCapture('camera'));  // panel auto-hides on fresh start
+    $('#cam-todemo').addEventListener('click', () => startCapture('sim'));
+    $('#btn-new').addEventListener('click', () => show('onboard'));
+    $('#btn-report').addEventListener('click', buildReport);
+    $('#btn-copy').addEventListener('click', copySummary);
+    $('#btn-ask-voice').addEventListener('click', () => { app.qIndex = 0; askNext(); });
+    $('#btn-q-skip').addEventListener('click', () => { $('#q-status').textContent = I18N.t('qAnswered'); });
+    $('#btn-clear-log').addEventListener('click', () => {
+      localStorage.removeItem('nadi-log'); renderLogbook();
+    });
+
+    // language pills
+    $$('.lang-pill').forEach(btn => btn.addEventListener('click', () => {
+      app.lang = btn.getAttribute('data-lang');
+      I18N.setLang(app.lang);
+      I18N.applyDom();
+      $$('.lang-pill').forEach(b => b.classList.toggle('active', b === btn));
+    }));
+
+    $('#method-details summary').textContent = 'Method & limits';
+  }
+
+  /* Debug/test hook: run a full simulated scenario instantly.
+   * (Used by tests/run_browser_smoke.mjs and useful at demo time.) */
+  function debugRun(kind) {
+    const rec = Simulator.generate(kind || 'afib', app.simSeed);
+    app.mode = 'sim';
+    app.buffer = [];
+    for (let i = 0; i < rec.signal.length; i++) {
+      app.buffer.push({ t: i / 30, v: rec.signal[i] });
+    }
+    sources.simData = rec.signal;
+    app.simCursor = rec.signal.length;
+    app.running = false;
+    analyze();
+  }
+  window.__nadi = { debugRun, getApp: () => app, sources };
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Self-heal stale state in normal tabs: unregister any service worker and
+    // wipe old caches left behind by earlier builds, then browsers always run
+    // the current version — the "works in incognito but not here" class of bug.
+    try {
+      if ('serviceWorker' in navigator && navigator.serviceWorker.getRegistrations) {
+        navigator.serviceWorker.getRegistrations()
+          .then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+      }
+      if (window.caches && window.caches.keys) {
+        caches.keys().then(ks => ks.forEach(k => caches.delete(k))).catch(() => {});
+      }
+    } catch (e) { /* cleanup is best-effort */ }
+
+    try {
+      console.info('NadiSense v1.0 · Agent Matrix · on-device AI (MIT-BIH AFDB-trained model) · nothing uploaded');
+      I18N.setLang('en');
+      I18N.applyDom();
+      wire();
+      renderLogbook();
+      // announce the model facts in the onboarding footer
+      if (typeof NADI_MODEL !== 'undefined') {
+        const meta = NADI_MODEL.meta || {};
+        $('#model-facts').textContent =
+          `${meta.architecture || 'MLP 12-20-10-1'} · val acc ${(meta.val_accuracy * 100).toFixed(1)}% · sens ${(meta.val_sensitivity * 100).toFixed(1)}% · spec ${(meta.val_specificity * 100).toFixed(1)}%`;
+      }
+    } catch (e) {
+      // A boot error must never produce a black screen — surface it plainly.
+      console.error('NadiSense boot failed:', e);
+      const s = document.createElement('div');
+      s.style.cssText = 'position:fixed;bottom:8px;left:8px;right:8px;background:#7f1d1d;color:#fff;'
+        + 'padding:10px 14px;border-radius:10px;font-size:13px;z-index:99';
+      s.textContent = 'NadiSense failed to start — please reload the page (hard refresh: Ctrl+Shift+R).';
+      document.body.appendChild(s);
+    }
+  });
+})();
+
+</script>
+</body>
+</html>

@@ -109,5 +109,29 @@ const t0 = Date.now();
 DSP.features(Simulator.generate('normal', 7).signal);
 ok(`perf: 30 s window analysed in ${Date.now() - t0} ms (target < 250 ms)`, Date.now() - t0 < 250);
 
+// ---------- 6. camera source robustness (regression: Vercel crash 2026-09) ----------
+const PpgCamera = load('ppgcamera.js');
+{
+  const src = new PpgCamera.Source();
+  const empty = src.read(30);                              // no frames pushed yet
+  ok('cam: read() on empty queue returns flat zeros (no crash)',
+    empty instanceof Float64Array && empty.length === 900 && empty.every(v => v === 0));
+
+  src.queue.push({ t: 0.033, v: 128 });                    // one frame only
+  const one = src.read(5);
+  ok('cam: read() with a single frame interpolates without crash',
+    one instanceof Float64Array && one.length === 150 && Number.isFinite(one[0]));
+
+  for (let i = 1; i < 300; i++)                            // 10 s of jittery frames
+    src.queue.push({ t: src.queue[src.queue.length - 1].t + 0.02 + (i % 7) * 0.01, v: 100 + Math.sin(i) * 20 });
+  const full = src.read(8);
+  ok('cam: read() over sparse/jittery frames stays finite',
+    full.length === 240 && full.every(Number.isFinite));
+
+  const short = src.read(0.05);                            // tiny window < 2 samples
+  ok('cam: read() never returns fewer than 2 samples', short.length >= 2);
+}
+
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

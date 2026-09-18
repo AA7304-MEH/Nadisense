@@ -1,28 +1,21 @@
 {
-  "dataset": "PhysioNet-style synthetic + perturbation augmentation (preview model; external validation on real AF data pending)",
-  "n_windows": 12000,
-  "n_train": 9600,
-  "n_val": 2400,
-  "features": [
-    "hrMean",
-    "sdnn",
-    "rmssd",
-    "pnn50",
-    "sd1",
-    "sd2",
-    "sd1sd2",
-    "lf_hf",
-    "s_ent",
-    "turning",
-    "irr",
-    "pvc"
+  "dataset": "MIT-BIH Atrial Fibrillation Database (PhysioNet afdb 1.0.0): cardiologist-annotated beats from 25 AFib patients; 30 s windows; camera-jitter augmentation (\u00b13%); record-independent holdout (5 patients never seen in training)",
+  "source": "REAL PATIENT DATA \u2014 replaces preview synthetic model",
+  "n_windows_train": 93730,
+  "n_windows_val": 11858,
+  "n_patients": 25,
+  "val_patients": [
+    "06426",
+    "06995",
+    "08378",
+    "08434",
+    "08455"
   ],
-  "architecture": "MLP 13-20-10-1 (tanh/tanh/sigmoid)",
-  "val_accuracy": 0.995,
-  "val_sensitivity": 0.9956958393113343,
-  "val_specificity": 0.9940357852882704,
-  "val_precision": 0.9956958393113343,
-  "val_f1": 0.9956958393113343,
-  "val_auc_approx": 0.995,
-  "threshold": 0.5
+  "architecture": "MLP 12-20-10-1 (tanh/tanh/sigmoid)",
+  "val_accuracy": 0.9719,
+  "val_sensitivity": 0.9948,
+  "val_specificity": 0.9515,
+  "val_precision": 0.9481,
+  "val_f1": 0.9709,
+  "note": "screening aid, not a diagnostic device"
 }

@@ -58,28 +58,26 @@ fingertip on camera (green-channel ROI, ~30 Hz)
 |---|---|
 | **Features (12)** | HR, SDNN, RMSSD, pNN50, SD1, SD2, SD1/SD2, LF/HF, spectral entropy, turning-point ratio, irregularity %, ectopy-like beat fraction |
 | **Model** | MLP 12→20→10→1 (tanh/tanh/sigmoid) — **6 KB**, ~2 ms inference, plain-text weights |
-| **Training** | `tools/train_mlp.py` — 12,000 windows of physiologically modelled PPG + augmentation; NumPy reference mirrors the JS DSP 1:1 (cross-language corr ≈ 0.998) |
-| **Held-out** | ~99.5% acc · 99.6% sens · 99.4% spec (synthetic distribution) |
+| **Training** | `tools/train_real_data.py` — **real patient data**: MIT-BIH Atrial Fibrillation Database (PhysioNet `afdb` 1.0.0), cardiologist-annotated, 25 AFib patients → 93,730 × 30 s RR windows + ±3% camera-jitter augmentation; NumPy reference mirrors the JS DSP 1:1 (cross-language corr ≈ 0.998) |
+| **Held-out (record-independent)** | **97.2% acc · 99.5% sens · 95.2% spec** on 5 patients (11,858 windows) never seen in training — full numbers in `tools/metrics.json` and `NADI_MODEL.meta` |
 | **Guardrails** | quality < 0.6 → retake · HR 40–180 · ≥ 12 clean beats · ectopy note |
 
 ## ✅ Tests (all reproducible)
 
 ```bash
-node tests/run_tests.mjs           # 30 assertions (no dependencies) — simulator, DSP, features, classifier, guardrails
-npm i jsdom && node tests/run_browser_smoke.mjs   # 13 assertions driving the real UI end-to-end
+node tests/run_tests.mjs           # 34 assertions (no dependencies) — simulator, DSP, features, classifier, camera, guardrails
+npm i jsdom && node tests/run_browser_smoke.mjs   # 19 assertions driving the real UI end-to-end
 ```
 
 ## 🔒 Privacy by architecture
 
-Frames are summed to ONE green-channel mean inside the app and discarded. There is **no server** — nothing is stored, uploaded or shared. The screening report is generated on-device.
+Frames are reduced to per-channel means inside the app and discarded (the app auto-picks the best pulse channel, e.g. red under a bright flash). There is **no server** — nothing is stored, uploaded or shared. The screening report is generated on-device.
 
 ## ⚠️ Honest limitations (we disclose, we don't hide)
 
-- The shipped model is validated on a realistic **synthetic** training distribution; a **real-patient benchmark (MIT-BIH AF/NSR)** is one command away:
-  ```bash
-  pip install wfdb scipy && python tools/train_mlp.py --real-data
-  ```
-- This is a **screening aid, not a medical device** — it never says "you have AFib", it says "get an ECG within 7 days".
+- Validation is on **ECG-derived RR intervals** (MIT-BIH AFDB, the clinical gold standard for rhythm labels); phone-camera PPG adds noise, which is why we train with jitter augmentation and **quality-gate** weak captures into a retake prompt instead of guessing.
+- Specificity 95% ⇒ ~1 in 20 normal readings can false-flag — by design we err toward caution.
+- This is a **screening aid, not a medical device** — it never says "you have AFib", it says "get an ECG".
 
 ## 🗂 Repo layout
 
