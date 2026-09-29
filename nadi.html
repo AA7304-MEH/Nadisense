@@ -1,9 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>NadiSense — 60-second AI heart screening</title>
+<!-- Chrome's auto-translate mutates text nodes while the app renders and can
+     blank the whole UI; NadiSense ships its own EN/HI/TA i18n, so translation
+     extensions/step tools must keep their hands off the DOM. -->
+<meta name="google" content="notranslate">
+<title>NadiSense — 30-second AI heart screening</title>
 <meta name="description" content="On-device AI cardiac rhythm screening for rural India. Camera-only PPG, offline, vernacular.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230f766e'/%3E%3Cpath d='M10 34h10l4-9 6 16 6-24 6 30 5-13h7' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
@@ -2006,11 +2010,17 @@ const Asr = (() => {
     if (inco) {
       // never print a % for a capture the quality gate rejected — a number
       // on a starved signal invites quoting it as a verdict.
+      // Drop data-i18n so a later I18N.applyDom() (boot finish / language
+      // switch) cannot stamp "P(irregular rhythm)" back over pNA.
       $('#p-value').textContent = '—';
-      $('#p-label').textContent = I18N.t('pNA');
+      const lab = $('#p-label');
+      lab.removeAttribute('data-i18n');
+      lab.textContent = I18N.t('pNA');
     } else {
       $('#p-value').textContent = `${(p * 100).toFixed(0)}%`;
-      $('#p-label').textContent = I18N.t('pLabel');
+      const lab = $('#p-label');
+      lab.setAttribute('data-i18n', 'pLabel');
+      lab.textContent = I18N.t('pLabel');
     }
     $('#level-chip').textContent = I18N.t(
       inco ? 'levelInco' :

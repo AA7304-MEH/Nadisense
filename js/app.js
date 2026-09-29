@@ -469,11 +469,17 @@
     if (inco) {
       // never print a % for a capture the quality gate rejected — a number
       // on a starved signal invites quoting it as a verdict.
+      // Drop data-i18n so a later I18N.applyDom() (boot finish / language
+      // switch) cannot stamp "P(irregular rhythm)" back over pNA.
       $('#p-value').textContent = '—';
-      $('#p-label').textContent = I18N.t('pNA');
+      const lab = $('#p-label');
+      lab.removeAttribute('data-i18n');
+      lab.textContent = I18N.t('pNA');
     } else {
       $('#p-value').textContent = `${(p * 100).toFixed(0)}%`;
-      $('#p-label').textContent = I18N.t('pLabel');
+      const lab = $('#p-label');
+      lab.setAttribute('data-i18n', 'pLabel');
+      lab.textContent = I18N.t('pLabel');
     }
     $('#level-chip').textContent = I18N.t(
       inco ? 'levelInco' :
