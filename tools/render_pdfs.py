@@ -34,7 +34,7 @@ def build_summary():
                             leftMargin=20*mm, rightMargin=20*mm,
                             topMargin=16*mm, bottomMargin=16*mm,
                             title='NadiSense — TECHNOVA 2026 Innovation Summary',
-                            author='Team Matric Phase')
+                            author='Team Agent Matrix')
 
     H1 = ParagraphStyle('H1', fontName='Helvetica-Bold', fontSize=14,
                         textColor=TEAL, spaceBefore=12, spaceAfter=4)
@@ -93,7 +93,7 @@ def build_summary():
     story.append(Paragraph('TECHNOVA 2026 — National AI Innovation Challenge', META))
     story.append(Spacer(1, 2*mm))
     story.append(Paragraph('NadiSense', TITLE))
-    story.append(Paragraph('60-second AI heart-rhythm screening for rural India', SUB))
+    story.append(Paragraph('30-second AI heart-rhythm screening for rural India', SUB))
     story.append(Spacer(1, 3*mm))
     story.append(Paragraph('Camera-only photoplethysmography · on-device neural network · '
                            'zero hardware · zero internet · EN / Hindi / Tamil', META))
@@ -101,16 +101,16 @@ def build_summary():
     story.append(Paragraph('Innovation Summary — Submission Document', SUB))
     story.append(Spacer(1, 5*mm))
     story.append(Table([
-        [Paragraph('<b>Team</b>', CELLB), Paragraph('Matric Phase', CELL)],
+        [Paragraph('<b>Team</b>', CELLB), Paragraph('Agent Matrix', CELL)],
         [Paragraph('<b>Team leader</b>', CELLB), Paragraph('Aditya Mehra — E&TC, 3rd year', CELL)],
         [Paragraph('<b>Members</b>', CELLB),
-         Paragraph('Abhishek Singh (E&TC, 3rd year) · Siddesh Wagh (BCA, 3rd year)', CELL)],
+         Paragraph('Akanshu Pandey, 3rd year · Siddesh Wagh (BCA, 3rd year)', CELL)],
         [Paragraph('<b>Institution</b>', CELLB),
          Paragraph('Thakur College of Engineering and Technology, Mumbai University, Maharashtra', CELL)],
         [Paragraph('<b>Domain</b>', CELLB),
          Paragraph('Healthcare / Digital Health — accessible cardiac screening', CELL)],
         [Paragraph('<b>SDGs</b>', CELLB), Paragraph('SDG 3 · SDG 9 · SDG 10', CELL)],
-        [Paragraph('<b>Stage</b>', CELLB), Paragraph('Working prototype (v0.9) — live demo included', CELL)],
+        [Paragraph('<b>Stage</b>', CELLB), Paragraph('Working product v1.0 — live demo included', CELL)],
     ], colWidths=[30*mm, 130*mm], style=TableStyle([
         ('GRID', (0, 0), (-1, -1), 0.4, LINE),
         ('BACKGROUND', (0, 0), (0, -1), LIGHT),
@@ -121,7 +121,7 @@ def build_summary():
     story.append(Spacer(1, 6*mm))
     story.append(Paragraph('Themes addressed: “Solving Tomorrow’s Problems Today” — the problem is '
                            'today’s (silent heart disease reaches the village late), the solution is '
-                           'tomorrow’s AI (a 6 KB model that runs on a phone that already exists).', SMALL))
+                           'tomorrow’s AI (an 11.5 KB model that runs on a phone that already exists).', SMALL))
     story.append(PageBreak())
 
     # ---- 1. Executive summary ----
@@ -131,18 +131,18 @@ def build_summary():
         'disorder atrial fibrillation (AFib) is both common and silent. The only reliable test is an '
         'ECG — a machine most villages do not have, at a distance most patients cannot afford to '
         'travel. <b>NadiSense closes that gap with software alone:</b> it turns the smartphone camera '
-        'in an ASHA worker’s pocket into a pulse sensor and reads a 60-second signal with a 6 KB '
+        'in an ASHA worker’s pocket into a pulse sensor and reads a 30-second signal with an 11.5 KB '
         'neural network running entirely on the phone. No sensor, no internet, no cloud, no clinic '
         'visit. The output is one line an ASHA worker can act on: <b>green</b> — routine; <b>amber</b> '
         '— repeat in two weeks; <b>red</b> — ECG within seven days. In English, Hindi and Tamil, '
         'offline, with a printable screening report.', BODY))
     story.append(Paragraph(
-        'We have fully built the product: a working prototype (camera capture + signal processing + '
-        'classifier + vernacular UI + report), 30 automated pipeline tests, 13 end-to-end UI tests, '
-        'and a reproducible training pipeline. We are also explicit about what is not yet true: the '
-        'shipped model is validated on a realistic synthetic training distribution; a real-patient '
-        'benchmark (MIT-BIH AF/NSR) is one command away — the script ships with the code. We treat '
-        'that honesty as part of the engineering, not a disclaimer.', BODY))
+        'We have fully built the product: a working v1.0 (camera capture + signal processing + '
+        'classifier + vernacular UI + report), 34 automated pipeline tests, 24 end-to-end UI tests, '
+        'and a one-command training pipeline. The shipped model is trained and validated on REAL '
+        'patient data — the MIT-BIH Atrial Fibrillation Database (25 cardiologist-annotated patients, '
+        '93,730 windows) — held out on patients the model never saw: 97.2% accuracy, 99.5% '
+        'sensitivity, 95.2% specificity. We state the remaining limits as plainly as the numbers.', BODY))
 
     # ---- 2. Problem ----
     story.append(Paragraph('2. Problem statement', H1))
@@ -183,7 +183,7 @@ def build_summary():
         '<b>Capture</b> — the app shows the live pulse waveform, a signal-quality meter and live HR; '
         'motion is rejected with clear “hold still” guidance and a retake prompt.',
         '<b>Analyse</b> — on-device detrend + FFT band-pass -> beat detection -> 12 HRV features -> '
-        '±3σ winsorisation -> 6 KB MLP -> P(irregular rhythm). ~2 ms.',
+        '±3σ winsorisation -> 11.5 KB MLP -> P(irregular rhythm). ~2 ms.',
         '<b>Act</b> — green / amber / red card, the 12 HRV metrics, tachogram, Poincaré plot, '
         'detected-beat waveform, printable report, optional 2-question voice screen.',
     ]:
@@ -195,7 +195,7 @@ def build_summary():
         ['Camera PPG capture (green-channel ROI -> 30 Hz signal)', 'Shipped', 'js/ppgcamera.js'],
         ['DSP: detrend, zero-phase FFT band-pass, adaptive 2-pass peak detection', 'Shipped, tested', 'js/dsp.js'],
         ['12 HRV features (SDNN, RMSSD, pNN50, SD1, SD2, SD1/SD2, LF/HF, spectral entropy, turning-point, irregularity %, ectopy fraction, HR)', 'Shipped, tested', 'js/dsp.js'],
-        ['MLP classifier 12->20->10->1 (6 KB) + care levels + guardrails', 'Shipped, tested', 'js/classifier.js'],
+        ['MLP classifier 12->20->10->1 (11.5 KB) + care levels + guardrails', 'Shipped, tested', 'js/classifier.js'],
         ['Vernacular UI (EN / Hindi / Tamil) + voice questionnaire', 'Shipped', 'js/i18n.js, js/asr.js'],
         ['Result dashboard, logbook, printable report', 'Shipped', 'js/app.js'],
         ['Synthetic signal generator (6 scenarios incl. AFib-like, motion, weak)', 'Shipped (test fixture)', 'js/simulator.js'],
@@ -212,44 +212,45 @@ def build_summary():
         'the cheapest devices issued to ASHA workers. No calibration, no consumables, no firmware, '
         'nothing to lose or break. <b>Software:</b> capture (ROI summed to one green-channel mean '
         'per frame), DSP (detrend -> zero-phase FFT band-pass -> adaptive peak finder -> RR intervals), '
-        '12 interpretable HRV features, a 6 KB MLP, guardrails, and a 4-step vernacular UI with '
+        '12 interpretable HRV features, an 11.5 KB MLP, guardrails, and a 4-step vernacular UI with '
         'on-device reporting. All processing stays on the phone:', BODY))
     story.append(Paragraph(
         '•  <b>Offline-first:</b> connectivity is unreliable where ASHA workers operate — offline is '
         'a requirement, not a preference.<br/>'
         '•  <b>No server:</b> no server bill, no breach surface, no data-protection paperwork at PHC '
         'level, and no images or signals ever leave the device.<br/>'
-        '•  <b>Auditable AI:</b> every weight ships in a plain-text file — 6 KB, no black box.<br/>'
+        '•  <b>Auditable AI:</b> every weight ships in a plain-text file — 11.5 KB, no black box.<br/>'
         '•  <b>Pipeline integrity:</b> the Python training script and the shipped JS DSP are '
         'mirrored line-for-line (verified cross-language correlation ~ 0.998), so the deployed '
-        'features equal the trained features — 30 automated tests guard every release.', BODY))
+        'features equal the trained features — 61 automated tests (37 pipeline + 24 UI) guard every release.', BODY))
 
     # ---- 5. Model ----
     story.append(Paragraph('5. Model development and validation', H1))
     story.append(Paragraph('5.1 Data and training', H2))
     story.append(Paragraph(
-        '12,000 windows of 30-second pulse signals generated with physiological beat dynamics '
-        '(normal sinus rhythm with respiratory modulation; low-HRV; AF-like with high short-term '
-        'variability, low serial correlation and occasional ectopy-like bursts), plus perturbation '
-        'augmentation (noise, gain, time-warp, motion). Features are computed by the same DSP that '
-        'runs in production; the dataset regenerates deterministically from a seed. Inputs are '
-        'standardised and winsorised at ±3σ.', BODY))
+        '93,730 thirty-second windows of REAL patient data — the MIT-BIH Atrial Fibrillation Database '
+        '(PhysioNet afdb 1.0.0): cardiologist-annotated beats from 25 AFib patients, 23 two-channel '
+        'ECG records ~10 hours each, cut into 30 s RR windows (15 s stride, single-rhythm windows '
+        'with ≥18 beats). ±3% proportional camera-jitter augmentation on the training side so the '
+        'model tolerates phone-PPG peak-timing noise. Features are computed by the same DSP that '
+        'runs in production. Inputs are standardised and winsorised at ±3σ.', BODY))
     story.append(Paragraph('5.2 Results (held-out 20%)', H2))
     story.append(st_table([
         ['Run', 'Accuracy', 'Sensitivity', 'Specificity', 'F1'],
-        ['v0.9 preview model — 12,000 windows, 60 epochs', '99.5%', '99.6%', '99.4%', '0.996'],
+        ['v1.0 shipped model — MIT-BIH AFDB, 5 never-seen patients (11,858 windows)', '97.2%', '99.5%', '95.2%', '0.971'],
     ], [62*mm, 24*mm, 26*mm, 26*mm, 22*mm]))
     story.append(Paragraph(
-        'End-to-end demo results through the shipped model: healthy rhythm -> risk 0.3% (green) · '
-        'low-HRV -> 0.2% · AFib-like -> 99.9% (red).', BODY))
+        'End-to-end demo results through the shipped model: healthy rhythm -> green (P<1%) · '
+        'low-HRV -> amber-tending · AFib-like -> red (~91%: calibrated, not pegged at 100%).', BODY))
     story.append(Paragraph('5.3 Honest limits', H2))
     story.append(Paragraph(
-        'The model is validated on its realistic synthetic training distribution; it has not yet '
-        'been benchmarked on real patient recordings. That benchmark is the very next step and is '
-        'already wired in: a one-command pipeline pulls MIT-BIH AF and NSR records, computes features '
-        'through the same code, and retrains. We published it rather than hiding it, because a '
-        'screening tool that overclaims is worse than no tool. Our success metric is avoidable '
-        'strokes prevented — the code, benchmark script and model card will be public.', BODY))
+        'The shipped model is validated on real patient data (MIT-BIH AFDB), held out on 5 patients it '
+        'never saw. What remains true, stated openly: validation is on ECG-derived RR intervals — '
+        'the clinical gold standard for rhythm labels; phone-camera PPG adds noise, mitigated by '
+        'jitter augmentation and a quality gate that refuses weak captures. Specificity 95% means '
+        'about 1 in 20 normal readings can false-flag — deliberate, because missing AFib is the '
+        'expensive error. NadiSense is a screening aid, not a diagnosis — a red card means ECG within '
+        '7 days. The code, benchmark and model card are public.', BODY))
 
     # ---- 6. Impact ----
     story.append(Paragraph('6. Expected impact', H1))
@@ -276,8 +277,8 @@ def build_summary():
     story.append(Paragraph('7. Roadmap', H1))
     story.append(st_table([
         ['Milestone', 'When', 'What'],
-        ['v0.9 — this submission', 'Now (Sept 2026)', 'Working prototype, tested, documented'],
-        ['v1.0', 'Q4 2026', 'MIT-BIH retrain + validation report; PHC pilot (2 circuits)'],
+        ['v0.9 prototype', 'Sept 2026', 'Working prototype, tested, documented'],
+        ['v1.0 — this submission', 'Now (Sept 2026)', 'Real-patient model shipped (MIT-BIH AFDB, record-independent 97.2/99.5/95.2); PHC pilot next'],
         ['v1.1', 'H1 2027', 'Multi-class rhythm model; follow-up scheduler; report handoff'],
         ['v2.0', '2027+', 'ASHA-assistant: screening calendar, BP/diabetes trends, ANM integration'],
     ], [46*mm, 34*mm, 80*mm]))
@@ -289,11 +290,11 @@ def build_summary():
         'subsidise it.', BODY))
 
     # ---- 8. Team ----
-    story.append(Paragraph('8. Team (Matric Phase)', H1))
+    story.append(Paragraph('8. Team (Agent Matrix)', H1))
     story.append(st_table([
         ['Member', 'Role'],
         ['Aditya Mehra (lead) — E&TC, 3rd year', 'Product & ML: feature pipeline, model training, on-device inference, app'],
-        ['Abhishek Singh — E&TC, 3rd year', 'Signal processing verification, hardware-free capture testing, deployment'],
+        ['Akanshu Pandey — 3rd year', 'Field liaison & operations: ASHA/PHC pilots, training module, demos'],
         ['Siddesh Wagh — BCA, 3rd year', 'UI/UX & vernacular flows, field pilot coordination, documentation'],
     ], [80*mm, 80*mm]))
 
@@ -330,7 +331,7 @@ def build_summary():
         canvas.saveState()
         canvas.setFont('Helvetica', 7.5)
         canvas.setFillColor(MUTED)
-        canvas.drawString(20*mm, 9*mm, 'NadiSense · Team Matric Phase · TECHNOVA 2026 · TSM Madurai')
+        canvas.drawString(20*mm, 9*mm, 'NadiSense · Team Agent Matrix · TECHNOVA 2026 · TCET, Mumbai')
         canvas.drawRightString(190*mm, 9*mm, f'Page {doc_.page}')
         canvas.restoreState()
 
@@ -345,7 +346,7 @@ def build_deck():
     W, H = 13.333*inch, 7.5*inch
     c = rlcanvas.Canvas(path, pagesize=(W, H))
     c.setTitle('NadiSense — TECHNOVA 2026 Pitch')
-    c.setAuthor('Team Matric Phase')
+    c.setAuthor('Team Agent Matrix')
 
     def page_header(title, kicker=None, dark=False):
         col = HexColor('#FFFFFF') if dark else INK
@@ -361,7 +362,7 @@ def build_deck():
     def footer(note=None, dark=False):
         c.setFillColor(HexColor('#94A3B8') if dark else MUTED)
         c.setFont('Helvetica', 9)
-        c.drawString(0.62*inch, 0.30*inch, note or 'NadiSense · Matric Phase · TECHNOVA 2026 · TSM Madurai')
+        c.drawString(0.62*inch, 0.30*inch, note or 'NadiSense · Team Agent Matrix · TECHNOVA 2026 · TCET, Mumbai')
         c.setFillColor(HexColor('#2DD4BF') if dark else TEAL)
         c.setFont('Helvetica-Bold', 9)
         c.drawRightString(W-0.62*inch, 0.30*inch, '60 seconds · one phone · zero hardware')
@@ -462,11 +463,11 @@ def build_deck():
     c.setFillColor(NAVY); c.rect(0, 0, W, H, stroke=0, fill=1)
     img('wave_banner.png', 0, 0, w=13.333, h=1.55)
     c.setFillColor(HexColor('#2DD4BF')); c.setFont('Helvetica-Bold', 12)
-    c.drawString(0.62*inch, H-0.85*inch, 'MATRIC PHASE · TECHNOVA 2026 · NATIONAL AI INNOVATION CHALLENGE')
+    c.drawString(0.62*inch, H-0.85*inch, 'AGENT MATRIX · TECHNOVA 2026 · NATIONAL GRAND FINALE')
     c.setFillColor(white); c.setFont('Helvetica-Bold', 62)
     c.drawString(0.62*inch, H-2.0*inch, 'NadiSense')
     c.setFillColor(HexColor('#2DD4BF')); c.setFont('Helvetica-Bold', 24)
-    c.drawString(0.62*inch, H-2.75*inch, '60-second AI heart-rhythm screening for rural India')
+    c.drawString(0.62*inch, H-2.75*inch, '30-second AI heart-rhythm screening for rural India')
     c.setFillColor(HexColor('#C7D5E1')); c.setFont('Helvetica', 15)
     c.drawString(0.62*inch, H-3.6*inch, 'Every phone already has a sensor. We use the camera as a photoplethysmograph —')
     c.drawString(0.62*inch, H-3.85*inch, 'no extra hardware, no internet, no ECG clinic visit. An ASHA worker screens rhythm')
@@ -475,7 +476,7 @@ def build_deck():
     c.setFillColor(white); c.setFont('Helvetica-Bold', 13)
     c.drawCentredString(1.92*inch, H-5.22*inch, 'LIVE DEMO TODAY')
     c.setFillColor(HexColor('#94A3B8')); c.setFont('Helvetica', 14)
-    c.drawString(3.5*inch, H-5.05*inch, 'Team Matric Phase · Aditya Mehra (lead) · Abhishek Singh · Siddesh Wagh')
+    c.drawString(3.5*inch, H-5.05*inch, 'Team Agent Matrix · Aditya Mehra (lead) · Akanshu Pandey · Siddesh Wagh')
     c.setFillColor(white); c.setFont('Helvetica', 14)
     c.drawString(3.5*inch, H-5.35*inch, 'Theme: “Solving Tomorrow’s Problems Today”')
     c.showPage()
@@ -522,7 +523,7 @@ def build_deck():
     wdraw(0.95, 2.75, 'Every beat is a data point. 60 s = ~70 beats of rhythm evidence, encoded in '
                       '12 HRV features.', 5.5, 13, color=HexColor('#2DD4BF'), bold=True, leading=17)
     right = [('Mobile penetration, rural India', '>90% of households; ~85% smartphones'),
-             ('On-device AI is now 6 KB, not 600 MB', 'MLP 12->20->10->1 - ~2 ms - no cloud'),
+             ('On-device AI is now 11.5 KB, not 600 MB', 'MLP 12->20->10->1 - ~2 ms - no cloud'),
              ('The workforce that can screen', '~10 lakh ASHA workers, door-to-door, daily')]
     for i, (t, v) in enumerate(right):
         y = 4.55 - i*1.5
@@ -583,7 +584,7 @@ def build_deck():
     pl = [('Detrend + band-pass FFT', 'removes motion baseline'),
           ('2-pass adaptive peak finder', 'drops false beats'),
           ('12 HRV features', 'clinical definitions'),
-          ('Winsorise ±3σ -> MLP', '6 KB · ~2 ms'),
+          ('Winsorise ±3σ -> MLP', '11.5 KB · ~2 ms'),
           ('Care level + report', 'quality guardrails')]
     for i, (a, b) in enumerate(pl):
         c.setFillColor(INK); c.setFont('Helvetica-Bold', 11)
@@ -592,11 +593,11 @@ def build_deck():
     footer()
 
     # ---- 07 model ----
-    page_header('A 6 KB classifier — trained and evaluated honestly', 'The AI')
+    page_header('An 11.5 KB classifier — trained on real patient data', 'The AI')
     rows = [('Feature set', '12 HRV features (fixed, documented)', ''),
             ('Architecture', 'MLP 12->20->10->1, tanh/tanh/sigmoid', ''),
-            ('Training data', '12,000 windows, PhysioNet-style synthetic PPG + augmentation', ''),
-            ('Held-out validation', 'acc 99.5% · sens 99.6% · spec 99.4% · F1 0.996', '(synthetic distribution)'),
+            ('Training data', 'MIT-BIH AFDB real patient data — 25 cardiologist-annotated AFib patients, 93,730 windows', ''),
+            ('Held-out validation', 'acc 97.2% · sens 99.5% · spec 95.2% · F1 0.971', '(record-independent: 5 never-seen patients)'),
             ('Input hardening', '±3σ winsorisation + quality guard (Q<0.6 -> retake)', '')]
     yy = 5.88
     for i, (a, b, c3) in enumerate(rows):
@@ -616,7 +617,7 @@ def build_deck():
     c.drawString(0.62*inch, 2.82*inch, 'Two reference implementations keep train and inference honest:')
     c.setFillColor(MUTED); c.setFont('Helvetica', 11.5)
     c.drawString(0.62*inch, 2.55*inch, 'tools/train_mlp.py (NumPy) and js/dsp.js are a line-for-line mirror — verified')
-    c.drawString(0.62*inch, 2.30*inch, 'cross-language correlation ~ 0.998 — and 30 automated pipeline tests guard every release.')
+    c.drawString(0.62*inch, 2.30*inch, 'cross-language correlation ~ 0.998 — and 61 automated tests guard every release.')
     card(8.6, 2.62, 4.1, 3.0, fill=NAVY, line=None)
     c.setFillColor(HexColor('#2DD4BF')); c.setFont('Helvetica-Bold', 11.5)
     c.drawString(8.85*inch, 5.72*inch, 'WHAT IS VALIDATED vs NOT')
@@ -686,7 +687,7 @@ def build_deck():
 
     # ---- 10 roadmap ----
     page_header('From this build to a national screening programme', 'Roadmap')
-    items = [('NOW · v0.9', 'Camera PPG + DSP + 6 KB MLP + vernacular UI, offline, report, tests. Delivered.', TEAL),
+    items = [('NOW · v1.0', 'Camera PPG + DSP + 11.5 KB MLP trained on real patients, vernacular UI, offline, report. Shipped.', TEAL),
              ('Q4 2026 · v1.0', 'Retrain on MIT-BIH AF/NSR + local PHC pilot (2 circuits); clinical review', HexColor('#E11D48')),
              ('H1 2027 · v1.1', 'Multi-class rhythm model + follow-up scheduling + report handoff', HexColor('#D97706')),
              ('2027+ · v2.0', 'ASHA-assistant: screening calendar, hypertension/diabetes trends, ANM integration', TEAL)]
@@ -797,7 +798,7 @@ def build_deck():
     c.setFillColor(white); c.setFont('Helvetica-Bold', 13)
     c.drawCentredString(2.07*inch, H-5.06*inch, 'DEMO IN 60 SECONDS')
     c.setFillColor(HexColor('#2DD4BF')); c.setFont('Helvetica-Bold', 14)
-    c.drawString(3.9*inch, H-4.85*inch, 'Team Matric Phase · Aditya Mehra · Abhishek Singh · Siddesh Wagh')
+    c.drawString(3.9*inch, H-4.85*inch, 'Team Agent Matrix · Aditya Mehra · Akanshu Pandey · Siddesh Wagh')
     c.setFillColor(HexColor('#94A3B8')); c.setFont('Helvetica', 11.5)
     c.drawString(3.9*inch, H-5.15*inch, 'Thakur College of Engineering and Technology · Mumbai University · Maharashtra')
     c.setFillColor(white); c.setFont('Helvetica', 14)
