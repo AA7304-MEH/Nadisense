@@ -442,8 +442,9 @@
     show('result');
     const r = app.result;
     const level = r.level;
-    const lvlColors = { low: '#22c55e', mid: '#f59e0b', high: '#ef4444', error: '#64748b' };
+    const lvlColors = { low: '#22c55e', mid: '#f59e0b', high: '#ef4444', error: '#64748b', inconclusive: '#f59e0b' };
     const color = lvlColors[level] || lvlColors.low;
+    const inco = level === 'inconclusive';
 
     if (level === 'error' || !r.features) {
       // mode-aware troubleshooting: a failed camera capture usually means
@@ -461,18 +462,27 @@
 
     // gauge
     const p = r.p;
-    const angle = -90 + 180 * p;
+    const angle = inco ? 0 : -90 + 180 * p;   // weak captures park the needle dead-centre
     const needle = $('#gauge-needle');
     needle.setAttribute('transform', `rotate(${angle} 100 100)`);
     needle.style.transition = 'transform 1.2s cubic-bezier(.2,.8,.2,1)';
-    $('#p-value').textContent = `${(p * 100).toFixed(0)}%`;
-    $('#p-label').textContent = I18N.t('pLabel');
+    if (inco) {
+      // never print a % for a capture the quality gate rejected — a number
+      // on a starved signal invites quoting it as a verdict.
+      $('#p-value').textContent = '—';
+      $('#p-label').textContent = I18N.t('pNA');
+    } else {
+      $('#p-value').textContent = `${(p * 100).toFixed(0)}%`;
+      $('#p-label').textContent = I18N.t('pLabel');
+    }
     $('#level-chip').textContent = I18N.t(
+      inco ? 'levelInco' :
       level === 'low' ? 'levelLow' : level === 'mid' ? 'levelMid' : 'levelHigh');
     $('#level-chip').style.background = color;
 
     const levelBody = $('#level-body');
     levelBody.textContent = I18N.t(
+      inco ? 'levelIncoD' :
       level === 'low' ? 'levelLowD' : level === 'mid' ? 'levelMidD' : 'levelHighD');
 
     // metric cards
@@ -593,7 +603,7 @@
     try {
       const log = JSON.parse(localStorage.getItem('nadi-log') || '[]');
       log.unshift({
-        ts: r.ts, level: r.level, p: r.p ? Math.round(r.p * 100) : null,
+        ts: r.ts, level: r.level, p: r.level === 'inconclusive' ? null : (r.p != null ? Math.round(r.p * 100) : null),
         hr: r.features ? Math.round(r.features.hrMean) : null,
         sdnn: r.features ? Math.round(r.features.sdnn) : null,
         mode: r.mode,
@@ -606,7 +616,7 @@
     try {
       const log = JSON.parse(localStorage.getItem('nadi-log') || '[]');
       const el = $('#logbook-list');
-      const colors = { low: '#22c55e', mid: '#f59e0b', high: '#ef4444', error: '#64748b' };
+      const colors = { low: '#22c55e', mid: '#f59e0b', high: '#ef4444', error: '#64748b', inconclusive: '#f59e0b' };
       el.innerHTML = log.length ? log.slice(0, 6).map(e => `
         <div class="log-row">
           <span class="dot" style="background:${colors[e.level] || '#777'}"></span>
@@ -623,9 +633,9 @@
   function reportHTML() {
     const r = app.result;
     const f = r.features;
-    const lvlName = { low: 'Regular rhythm', mid: 'Inconclusive', high: 'Irregular pattern flagged', error: 'Unreadable' }[r.level];
+    const lvlName = { low: 'Regular rhythm', mid: 'Inconclusive', high: 'Irregular pattern flagged', error: 'Unreadable', inconclusive: 'Inconclusive — retake' }[r.level];
     const name = ($('#patient-name').value || '').trim() || '(name withheld)';
-    const levelNamesT = { low: I18N.t('levelLow'), mid: I18N.t('levelMid'), high: I18N.t('levelHigh') };
+    const levelNamesT = { low: I18N.t('levelLow'), mid: I18N.t('levelMid'), high: I18N.t('levelHigh'), inconclusive: I18N.t('levelInco') };
     return `<!doctype html><html><head><meta charset="utf-8"><title>NadiSense report</title>
 <style>
  body{font:14px/1.5 system-ui,Segoe UI,Roboto,sans-serif;color:#111;max-width:720px;margin:24px auto;padding:0 16px}
@@ -638,8 +648,8 @@
 </style></head><body>
 <div class="head"><div><h1>NadiSense — Screening Report</h1><div class="sub">${I18N.t('appName')} · on-device AI rhythm screening (PPG)</div></div><div class="sub">${new Date(r.ts).toLocaleString()}</div></div>
 <p><b>Person:</b> ${name}</p>
-<span class="badge" style="background:${r.level === 'low' ? '#16a34a' : r.level === 'mid' ? '#d97706' : '#dc2626'}">${levelNamesT[r.level] || lvlName} · P=${(r.p * 100).toFixed(0)}%</span>
-<p>${I18N.t(r.level === 'low' ? 'levelLowD' : r.level === 'mid' ? 'levelMidD' : 'levelHighD')}</p>
+<span class="badge" style="background:${r.level === 'low' ? '#16a34a' : r.level === 'high' ? '#dc2626' : '#d97706'}">${levelNamesT[r.level] || lvlName}${r.level === 'inconclusive' ? '' : ` · P=${(r.p * 100).toFixed(0)}%`}</span>
+<p>${I18N.t(r.level === 'inconclusive' ? 'levelIncoD' : r.level === 'low' ? 'levelLowD' : r.level === 'mid' ? 'levelMidD' : 'levelHighD')}</p>
 <table><tr><th>Metric</th><th>Value</th></tr>
 <tr><td>Heart rate</td><td>${Math.round(f.hrMean)} bpm</td></tr>
 <tr><td>SDNN</td><td>${f.sdnn.toFixed(0)} ms</td></tr>
@@ -650,7 +660,7 @@
 <tr><td>Sample entropy</td><td>${f.sampen.toFixed(2)}</td></tr>
 <tr><td>Beats analysed</td><td>${f.n_beats}</td></tr></table>
 <p><b>Questionnaire:</b> history — ${app.answers.q1 ? (app.answers.q1.yes ? 'Yes' : 'No') : 'not asked'}; symptoms — ${app.answers.q2 ? app.answers.q2.text : 'not asked'}</p>
-<div class="warn"><b>Next step:</b> ${r.level === 'high' ? 'Refer for a 12-lead ECG within 7 days. This is a screening signal — not a diagnosis.' : r.level === 'mid' ? 'Repeat screening in 2 weeks; refer sooner if symptomatic.' : 'Routine follow-up in 6 months; seek care sooner if symptoms appear.'}</div>
+<div class="warn"><b>Next step:</b> ${r.level === 'high' ? 'Refer for a 12-lead ECG within 7 days. This is a screening signal — not a diagnosis.' : r.level === 'mid' ? 'Repeat screening in 2 weeks; refer sooner if symptomatic.' : r.level === 'inconclusive' ? 'Retake immediately: finger flat over one rear camera, flash ON, hold still 30 seconds. No result was produced from the rejected capture.' : 'Routine follow-up in 6 months; seek care sooner if symptoms appear.'}</div>
 <p class="foot">${I18N.t('disclaimer')}<br>NadiSense v1.0 · Agent Matrix · TECHNOVA 2026 · generated on-device, no data uploaded.</p>
 <button class="no-print" onclick="window.print()">Print</button>
 </body></html>`;
@@ -670,7 +680,7 @@
     const r = app.result; if (!r) return;
     const f = r.features;
     const txt = `NadiSense screening ${new Date(r.ts).toLocaleString()}\n` +
-      `Level: ${r.level} · P(irregular)=${(r.p * 100).toFixed(0)}%\n` +
+      `Level: ${r.level}${r.level === 'inconclusive' ? ' (quality gate rejected capture — no P reported)' : ` · P(irregular)=${(r.p * 100).toFixed(0)}%`}\n` +
       `HR ${Math.round(f.hrMean)} bpm · SDNN ${f.sdnn.toFixed(0)} ms · RMSSD ${f.rmssd.toFixed(0)} ms · ${f.n_beats} beats`;
     try { await navigator.clipboard.writeText(txt); } catch (e) { prompt('Copy:', txt); }
   }

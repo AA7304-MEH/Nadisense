@@ -69,6 +69,12 @@ const Classifier = (() => {
 
     if (feat.sdnn < 30 && p < 0.35) notes.push('NOTE_LOW_HRV');
 
+    // safety gate: a weak capture must never produce a verdict. When the
+    // signal-quality index falls below the 0.6 gate the capture is ruled
+    // INCONCLUSIVE instead of low/mid/high — the model's p is still logged
+    // (transparency) but the UI must not present it as a reportable result.
+    if (quality !== null && quality < 0.6) level = 'inconclusive';
+
     return { p, level, warnings, hr: feat.hrMean, notes: notes.concat(warnings) };
   }
 

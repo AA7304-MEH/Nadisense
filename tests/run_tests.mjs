@@ -101,6 +101,17 @@ ok(`guard: weak signal flagged (Q=${weak.q.toFixed(2)})`, weak.q < 0.6);
 ok('guard: warnings surface in assessment',
   Classifier.assess(motion.f, motion.q).warnings.includes('WARN_QUALITY'));
 ok('guard: too-few-beats => error level', Classifier.assess(null, 0).level === 'error');
+// SAFETY GATE: a weak capture must never produce a verdict, no matter what
+// p the model computed. This is the behaviour demoed on stage ("it refuses
+// to guess") — if this fails, the stage claim is a lie.
+ok('gate: weak capture => inconclusive (never a verdict)',
+  Classifier.assess(motion.f, motion.q).level === 'inconclusive'
+  && Classifier.assess(weak.f, weak.q).level === 'inconclusive');
+ok('gate: clean capture unaffected by the gate',
+  ['low', 'mid', 'high'].includes(Classifier.assess(qOf('normal').f, qOf('normal').q).level)
+  && ['low', 'mid', 'high'].includes(Classifier.assess(qOf('afib').f, qOf('afib').q).level));
+ok('gate: un-quantified quality (null) keeps legacy behaviour',
+  ['low', 'mid', 'high'].includes(Classifier.assess(qOf('normal').f, null).level));
 
 // ---------- 5. determinism & timing ----------
 const s1 = Simulator.generate('afib', 42), s2 = Simulator.generate('afib', 42);
