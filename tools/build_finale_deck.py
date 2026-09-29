@@ -312,9 +312,9 @@ s = slide(); chrome(s, 12, '10', 'Business Model, Adoption & Competitive Advanta
 title(s, 'We don’t sell an app. We complete a routine that already exists', 'Go-To-Market: the person who uses it never pays — and that’s the whole plan')
 table_like(s, 0.55, 2.1, 12.2, [
     ['Jury question', 'Our answer'],
-    ['Target user?', 'ASHA/ANM workers in district NCD circuits — first 2 PHC circuits: Maharashtra + the Madurai belt, right here'],
+    ['Target user & first reach?', 'ASHA/ANM workers in district NCD circuits — first 2 PHC circuits: Maharashtra + the Madurai belt, right here. Total reach: 7,000+ NCD screening circuits / 1M+ ASHA workers nationally'],
     ['Who pays?', 'Public health: free forever — funded within NHM/district screening budgets. Revenue: insurers & TPAs (per active screen), diagnostics camps (licence), CSR wellness (per camp)'],
-    ['How do they discover it?', 'Inside their existing training days — 90 min train-the-trainer; the printed referral SOP is the onboarding'],
+    ['Adoption — how discovered?', 'Inside their existing training days — 90 min train-the-trainer; the printed referral SOP is the onboarding. Zero new habit to form'],
     ['First 1,000 users?', '2 circuits × ~50 workers, 60 days → 200+ real sessions → results dossier → district health society order paper'],
     ['Why do we win vs clones?', 'Only stack that is vernacular + offline + on-device + non-diagnostic + real-data-validated. Moat: the mirrored DSP/ML pipeline + dataset engine + weights (IP-ready)'],
 ], [3.3, 8.9], fs=11.5, rh=0.66)
