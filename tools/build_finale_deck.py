@@ -185,8 +185,8 @@ card(s, 0.55, 2.25, 3.9, 2.35, 'Deleted: the sensor', 'A phone camera is a photo
 card(s, 4.7, 2.25, 3.9, 2.35, 'Deleted: the internet', 'Every computation — signal, features, neural net — happens on the phone. No tower, no server, no bill, no breach. It works with the SIM card out.', GREEN, body_size=12)
 card(s, 8.85, 2.25, 3.85, 2.35, 'Deleted: the diagnosis', 'We don’t say "you have AFib" — a doctor owns that word. We say: "within 7 days, there’s an ECG with your name on it."', AMBER, body_size=12)
 bullets(s, 0.55, 4.95, 12.2, 1.6, [
-    ('What survived: ', '60 seconds → one card an ASHA worker can act on: GREEN routine · AMBER repeat in 2 weeks · RED ECG within 7 days — printable, in her language.'),
-    ('The value proposition in one breath: ', '₹0 hardware · ₹0 marginal cost · 60 seconds · a referral path printed on the result itself.'),
+    ('What survived: ', '30 seconds → one card an ASHA worker can act on: GREEN routine · AMBER repeat in 2 weeks · RED ECG within 7 days — printable, in her language.'),
+    ('The value proposition in one breath: ', '₹0 hardware · ₹0 marginal cost · 30 seconds · a referral path printed on the result itself.'),
 ], size=14)
 notes(s, """[2:40 — 45 s] This is the "originality" slide and it should feel like a reveal.
 "Every other solution to this problem that you will see today ADDS something — a device, a dongle, a subscription. We did the opposite. We asked: what can we delete before the remaining thing fits in an ASHA worker's pocket? We deleted the sensor — the camera already sees your pulse. We deleted the internet — and with it the server, the breach surface and the bill. We deleted the diagnosis — doctors own that word; we only light the path to one."
@@ -196,7 +196,7 @@ Then: "Let me stop talking and show you." TRANSITION TO DEMO.""")
 s = slide(); chrome(s, 5, '6', 'Prototype & Live Demonstration — part 1')
 title(s, 'Watch this happen, not a video of it', 'DEMO 1 · the full patient journey, live on stage — seeded AFib-like fixture through the identical real pipeline')
 steps = [('① She opens it', 'Her language. No login, no internet — the SIM could be out'),
-         ('② 60 seconds', 'Live waveform, a quality meter that guards her, live HR, beat count'),
+         ('② 30 seconds', 'Live waveform, a quality meter that guards her, live HR, beat count'),
          ('③ One breath later', 'On-device AI: detrend → filter → find beats → 12 features → neural net. ~2 ms'),
          ('④ Red card', '“ECG within 7 days” — plus a report to hand the PHC doctor')]
 for i, (h, b) in enumerate(steps):
